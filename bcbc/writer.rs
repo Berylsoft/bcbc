@@ -133,20 +133,20 @@ impl<O: Output> Writer<O> {
     }
 
     // TODO recv Iterator
-    fn val_seq<B: AsRef<[u8]>>(&mut self, s: &[Value<B>]) {
+    fn val_seq<B: AsRef<[u8]> + ByteStorage>(&mut self, s: &[Value<B>]) {
         for v in s {
             self.val(v);
         }
     }
 
-    fn val_seq_map<B: AsRef<[u8]>>(&mut self, s: &[(Value<B>, Value<B>)]) {
+    fn val_seq_map<B: AsRef<[u8]> + ByteStorage>(&mut self, s: &[(Value<B>, Value<B>)]) {
         for (k, v) in s {
             self.val(k);
             self.val(v);
         }
     }
 
-    fn val<B: AsRef<[u8]>>(&mut self, val: &Value<B>) {
+    fn val<B: AsRef<[u8]> + ByteStorage>(&mut self, val: &Value<B>) {
         macro_rules! bytevar_impl {
             ($n:expr, $nty:tt, $l4:expr, $rangefn:expr, $lenfn:expr) => {
                 let mut buf = [0; 8];
@@ -234,8 +234,8 @@ impl<O: Output> Writer<O> {
                 }
             },
             Value::String(b) => {
-                self.extszvar(H4::String, b.as_ref().len());
-                self.bytes(b.as_ref());
+                self.extszvar(H4::String, b.as_bytes().len());
+                self.bytes(b.as_bytes());
             },
             Value::Bytes(b) => {
                 self.extszvar(H4::Bytes, b.as_ref().len());
@@ -297,7 +297,7 @@ impl<O: Output> Writer<O> {
     }
 }
 
-impl<B: AsRef<[u8]>> Value<B> {
+impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
     pub fn encode<O: Output>(&self) -> O::Storage {
         let mut writer = Writer::<O>::new();
         writer.val(self);

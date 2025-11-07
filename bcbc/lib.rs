@@ -141,7 +141,7 @@ pub enum Type {
 // TODO variant structs?
 // TODO no value & matching r&w api
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Value<B> {
+pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     Unit,
     Bool(bool),
 
@@ -182,8 +182,8 @@ pub const EXT64: L4 = L4::EXT2; // 0xf
 
 pub trait Schema {
     const ID: TypeId;
-    fn serialize<B>(self) -> Value<B>;
-    fn deserialize<B>(val: Value<B>) -> Self;
+    fn serialize<B: AsRef<[u8]> + ByteStorage>(self) -> Value<B>;
+    fn deserialize<B: AsRef<[u8]> + ByteStorage>(val: Value<B>) -> Self;
 }
 
 // TODO temp solution

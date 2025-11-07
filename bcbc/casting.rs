@@ -148,7 +148,7 @@ impl Type {
     }
 }
 
-impl<B> Value<B> {
+impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
     pub const fn as_tag(&self) -> Tag {
         macro_rules! as_tag_impl {
             (
@@ -248,7 +248,7 @@ impl<B> Value<B> {
     }
 }
 
-impl<B> Value<B> {
+impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
     pub fn serialize_from<T: Schema>(val: T) -> Value<B> {
         val.serialize()
     }
@@ -293,7 +293,7 @@ macro_rules! into_impl {
     )*};
 }
 
-impl<B> Value<B> {
+impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
     into_impl! {
         into_unit | Unit
     }
@@ -331,9 +331,9 @@ impl<B> Value<B> {
 }
 
 #[allow(clippy::just_underscores_and_digits)]
-impl<B> Value<B> {
+impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
     // can only be function pointers
-    pub fn map_bytes<B2>(self, f: fn(B) -> B2) -> Value<B2> {
+    pub fn map_bytes<B2: AsRef<[u8]> + ByteStorage>(self, f: fn(B) -> B2) -> Value<B2> {
         match self {
             Value::Unit => Value::Unit,
             Value::Bool(_0) => Value::Bool(_0),

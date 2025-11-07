@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 // currently no need for Default & new()
 // TODO impl<B: AsRef<[u8]>, S: AsRef<str>> PartialEq&PartialOrd<S> for ByteStr<B>
 // cannot due to similar problem with Value
@@ -70,7 +70,19 @@ impl From<String> for ByteStr<Bytes> {
     }
 }
 
+impl<B: AsRef<[u8]>> ByteStr<B> {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.bytes.as_ref()
+    }
+}
+
 impl<B: AsRef<[u8]> + ByteStorage> ByteStr<B> {
+    pub fn as_str(&self) -> &str {
+        let b: &[u8] = self.bytes.as_ref();
+        // Safety: the invariant of `bytes` is that it contains valid UTF-8.
+        unsafe { core::str::from_utf8_unchecked(b) }
+    }
+
     // DO NOT impl TryFrom<B> keeping consistency to std
     // https://internals.rust-lang.org/t/20078/
     // TODO Result<Self, (B, core::str::Utf8Error)> ?
@@ -87,21 +99,31 @@ impl<B: AsRef<[u8]> + ByteStorage> ByteStr<B> {
 
 impl<B: AsRef<[u8]>> AsRef<[u8]> for ByteStr<B> {
     fn as_ref(&self) -> &[u8] {
-        self.bytes.as_ref()
+        self.as_bytes()
     }
 }
 
 impl<B: AsRef<[u8]> + ByteStorage> AsRef<str> for ByteStr<B> {
     fn as_ref(&self) -> &str {
-        let b: &[u8] = self.bytes.as_ref();
-        // Safety: the invariant of `bytes` is that it contains valid UTF-8.
-        unsafe { core::str::from_utf8_unchecked(b) }
+        self.as_str()
     }
 }
 
 impl<B> ByteStr<B> {
     pub fn map_bytes<B2>(self, f: fn(B) -> B2) -> ByteStr<B2> {
         ByteStr { bytes: f(self.bytes) }
+    }
+}
+
+impl<B: AsRef<[u8]> + ByteStorage> core::fmt::Debug for ByteStr<B> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(self.as_str(), f)
+    }
+}
+
+impl<B: AsRef<[u8]> + ByteStorage> core::fmt::Display for ByteStr<B> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Display::fmt(self.as_str(), f)
     }
 }
 
