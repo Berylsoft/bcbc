@@ -1,0 +1,52 @@
+namespace std {
+    alias name -> string
+
+    enum def-type {
+        alias  -> type
+        c-enum -> list<name>
+        enum   -> map<name, type>
+        struct -> map<name, type>
+    }
+}
+
+namespace zeon {
+    use std:name
+
+    c-enum commit-attr-type {
+        const
+        mut
+        iter-list
+        iter-set
+        complex
+    }
+
+    struct commit-attr {
+        attr-type -> commit-attr-type
+        attr-name -> name
+        val-type  -> type
+    }
+
+    struct complex-rev {
+        // TODO
+    }
+
+    enum rev {
+        const           -> unknown
+        mut             -> unknown
+        iter-list-add   -> list<unknown>
+        iter-set-add    -> list<unknown>
+        iter-set-remove -> list<unknown>
+        complex         -> complex-rev
+    }
+
+    struct object-id {
+        ot  -> u16
+        oid -> u64
+    }
+
+    struct rev-id {
+        object-id
+        trait-id
+        trait-attr-id
+    }
+}
