@@ -5,7 +5,7 @@ use super::*;
 // So we should check for allocation at sequence creates to ensure no panic.
 #[inline(always)]
 fn alloc_seq<T, F: FnMut(()) -> Result<T>>(size: usize, f: F) -> Result<Box<[T]>> {
-    core::iter::repeat(()).take(size).map(f).collect()
+    core::iter::repeat_n((), size).map(f).collect()
 }
 
 struct Reader<I> {

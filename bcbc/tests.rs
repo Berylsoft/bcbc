@@ -8,12 +8,12 @@ macro_rules! expb {
 }
 
 #[inline(always)]
-fn b<'a, B: ?Sized + AsRef<[u8]>>(bytes: &'a B) -> &'a [u8] {
+fn b<B: ?Sized + AsRef<[u8]>>(bytes: &B) -> &[u8] {
     bytes.as_ref()
 }
 
 #[inline(always)]
-fn s<'a, S: ?Sized + AsRef<str>>(bytes: &'a S) -> ByteStr<&'a [u8]> {
+fn s<S: ?Sized + AsRef<str>>(bytes: &S) -> ByteStr<&[u8]> {
     bytes.as_ref().into()
 }
 
@@ -115,7 +115,7 @@ fn cases() {
     );
 
     fn err_case(exp: &'static [u8], err: Error, pos: usize) {
-        let err2 = Value::decode::<SliceInput>(&exp).unwrap_err();
+        let err2 = Value::decode::<SliceInput>(exp).unwrap_err();
         assert_eq!(err2, FullError { err, buf: exp, pos });
     }
 

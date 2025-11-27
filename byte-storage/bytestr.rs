@@ -128,22 +128,23 @@ impl<B: AsRef<[u8]> + ByteStorage> core::fmt::Display for ByteStr<B> {
 }
 
 #[test]
+#[allow(path_statements)]
 const fn test() {
     trait AssertImpl { const ASSERT: () = (); }
 
     struct A<T>(T);
     impl<'a, T: From<&'a str>> AssertImpl for A<T> { const ASSERT: () = (); }
-    // let _ = A::<&[u8]>::ASSERT;
-    let _ = A::<Vec<u8>>::ASSERT;
-    // let _ = A::<Box<[u8]>>::ASSERT;
-    let _ = A::<Bytes>::ASSERT;
-    let _ = A::<ByteStr<&[u8]>>::ASSERT;
-    let _ = A::<ByteStr<Bytes>>::ASSERT;
+    // A::<&[u8]>::ASSERT;
+    A::<Vec<u8>>::ASSERT;
+    // A::<Box<[u8]>>::ASSERT;
+    A::<Bytes>::ASSERT;
+    A::<ByteStr<&[u8]>>::ASSERT;
+    A::<ByteStr<Bytes>>::ASSERT;
 
     struct B<T>(T);
     impl<T: From<&'static str>> AssertImpl for B<T> { const ASSERT: () = (); }
-    // let _ = B::<&'static [u8]>::ASSERT;
-    let _ = B::<Bytes>::ASSERT;
-    let _ = B::<ByteStr<&'static [u8]>>::ASSERT;
-    let _ = B::<ByteStr<Bytes>>::ASSERT;
+    // B::<&'static [u8]>::ASSERT;
+    B::<Bytes>::ASSERT;
+    B::<ByteStr<&'static [u8]>>::ASSERT;
+    B::<ByteStr<Bytes>>::ASSERT;
 }
