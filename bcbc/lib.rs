@@ -10,7 +10,7 @@ use foundations::{error_enum, num_enum};
 pub use byte_storage;
 use byte_storage::*;
 
-pub type EnumVariantId = u64;
+pub type VariantId = u64;
 pub type TupleItemId = u8;
 
 mod typeid;
@@ -39,8 +39,8 @@ num_enum! {
         Map     = 0x12,
         Tuple   = 0x13,
         Alias   = 0x14,
-        CEnum   = 0x15,
-        Enum    = 0x16,
+        Enum    = 0x15,
+        Union   = 0x16,
         Struct  = 0x17,
         Type    = 0x18,
         TypeId  = 0x19,
@@ -62,8 +62,8 @@ num_enum! {
         List   = 0xa,
         Map    = 0xb,
         Tuple  = 0xc,
-        CEnum  = 0xd,
-        Enum   = 0xe,
+        Enum   = 0xd,
+        Union  = 0xe,
         Struct = 0xf,
     } as u8 else Fatal::H4
 }
@@ -129,8 +129,8 @@ pub enum Type {
     Map(Box<Type>, Box<Type>),
     Tuple(Box<[Type]>),
     Alias(TypeId),
-    CEnum(TypeId),
     Enum(TypeId),
+    Union(TypeId),
     Struct(TypeId),
 
     Type,
@@ -167,8 +167,8 @@ pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     Tuple(Box<[Value<B>]>),
 
     Alias(TypeId, Box<Value<B>>),
-    CEnum(TypeId, EnumVariantId),
-    Enum(TypeId, EnumVariantId, Box<Value<B>>),
+    Enum(TypeId, VariantId),
+    Union(TypeId, VariantId, Box<Value<B>>),
     Struct(TypeId, Box<[Value<B>]>),
 
     Type(Type),

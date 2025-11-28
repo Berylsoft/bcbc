@@ -141,7 +141,7 @@ impl Type {
                 Tuple
                 Alias
                 Enum
-                CEnum
+                Union
                 Struct
             }
         }
@@ -186,8 +186,8 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
                 Map
                 Tuple
                 Alias
-                CEnum
                 Enum
+                Union
                 Struct
                 Type
                 TypeId
@@ -236,8 +236,8 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
             }
             typeid {
                 Alias
-                CEnum
                 Enum
+                Union
                 Struct
             }
             Value::Option(t, ..) => Type::Option(Box::new(t.clone())),
@@ -324,8 +324,8 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
         into_map -> Box<[(Value<B>, Value<B>)]>| Map(_t, s) -> { s }
         into_tuple -> Box<[Value<B>]>          | Tuple(s) -> { s }
         into_alias -> Value<B>                 | Alias(_id, v) -> { *v }
-        into_c_enum -> EnumVariantId           | CEnum(_id, ev) -> { ev }
-        into_enum -> (EnumVariantId, Value<B>) | Enum(_id, ev, v) -> { (ev, *v) }
+        into_enum -> VariantId           | Enum(_id, ev) -> { ev }
+        into_union -> (VariantId, Value<B>) | Union(_id, ev, v) -> { (ev, *v) }
         into_struct -> Box<[Value<B>]>         | Struct(_id, s) -> { s }
     }
 }
@@ -366,8 +366,8 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
                 Value::Tuple(_0.into_vec().into_iter().map(|v| v.map_bytes(f)).collect())
             }
             Value::Alias(_0, _1) => Value::Alias(_0, Box::new(_1.map_bytes(f))),
-            Value::CEnum(_0, _1) => Value::CEnum(_0, _1),
-            Value::Enum(_0, _1, _2) => Value::Enum(_0, _1, Box::new(_2.map_bytes(f))),
+            Value::Enum(_0, _1) => Value::Enum(_0, _1),
+            Value::Union(_0, _1, _2) => Value::Union(_0, _1, Box::new(_2.map_bytes(f))),
             Value::Struct(_0, _1) => Value::Struct(
                 _0,
                 _1.into_vec().into_iter().map(|v| v.map_bytes(f)).collect(),

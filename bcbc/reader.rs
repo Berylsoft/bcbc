@@ -150,8 +150,8 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
             }
             typeid {
                 Alias
-                CEnum
                 Enum
+                Union
                 Struct
             }
             Tag::Option => {
@@ -256,16 +256,16 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 let s = self.val_seq(len)?;
                 Value::Tuple(s)
             }
-            H4::CEnum => {
-                let ev = self.extvar(l4)?;
-                let r = self.typeid()?;
-                Value::CEnum(r, ev)
-            }
             H4::Enum => {
                 let ev = self.extvar(l4)?;
                 let r = self.typeid()?;
+                Value::Enum(r, ev)
+            }
+            H4::Union => {
+                let ev = self.extvar(l4)?;
+                let r = self.typeid()?;
                 let v = self.val()?;
-                Value::Enum(r, ev, Box::new(v))
+                Value::Union(r, ev, Box::new(v))
             }
             H4::Struct => {
                 let len = self.extszvar(l4)?;

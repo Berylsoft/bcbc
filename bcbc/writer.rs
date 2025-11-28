@@ -92,8 +92,8 @@ impl<O: Output> Writer<O> {
             }
 
             Type::Alias(r)
-            | Type::CEnum(r)
             | Type::Enum(r)
+            | Type::Union(r)
             | Type::Struct(r) => {
                 self.typeid(r);
             }
@@ -271,12 +271,12 @@ impl<O: Output> Writer<O> {
                 self.typeid(r);
                 self.val(v);
             },
-            Value::CEnum(r, ev) => {
-                self.extvar(H4::CEnum, *ev);
+            Value::Enum(r, ev) => {
+                self.extvar(H4::Enum, *ev);
                 self.typeid(r);
             },
-            Value::Enum(r, ev, v) => {
-                self.extvar(H4::Enum, *ev);
+            Value::Union(r, ev, v) => {
+                self.extvar(H4::Union, *ev);
                 self.typeid(r);
                 self.val(v);
             },

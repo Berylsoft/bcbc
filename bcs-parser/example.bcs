@@ -1,10 +1,10 @@
 namespace std {
     alias name -> string
 
-    enum def-type {
+    union def-type {
         alias  -> type
-        c-enum -> list<name>
-        enum   -> map<name, type>
+        enum   -> list<name>
+        union  -> map<name, type>
         struct -> map<name, type>
     }
 }
@@ -12,7 +12,7 @@ namespace std {
 namespace zeon {
     use std:name
 
-    c-enum commit-attr-type {
+    enum commit-attr-type {
         const
         mut
         iter-list
@@ -30,7 +30,7 @@ namespace zeon {
         // TODO
     }
 
-    enum rev {
+    union rev {
         const           -> unknown
         mut             -> unknown
         iter-list-add   -> list<unknown>
