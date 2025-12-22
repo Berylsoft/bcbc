@@ -1,0 +1,27 @@
+[package]
+name = "bcbc"
+version = "0.1.0"
+edition = "2021"
+authors = ["stackinspector"]
+license = "MPL-2.0"
+repository = "https://github.com/Berylsoft/bcbc"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+foundations = { git = "https://github.com/Berylsoft/foundations", features = [
+    # "byterepr",
+
+    "error-enum",
+    "num-enum",
+    # "byterepr-macros",
+] }
+byte-storage = { git = "https://github.com/Berylsoft/byte-storage", features = ["alloc"] }
+
+[dev-dependencies]
+hex = "*"
+hex-literal = "*"
+
+[features]
+bytes = ["byte-storage/bytes"]

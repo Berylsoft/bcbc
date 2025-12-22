@@ -1,0 +1,121 @@
+#![deny(unused_results)]
+#![forbid(unsafe_code)]
+
+#![no_std]
+
+extern crate alloc;
+use alloc::boxed::Box;
+
+use foundations::{error_enum, num_enum_reverse};
+pub use byte_storage;
+use byte_storage::*;
+
+type VariantId = u128;
+
+num_enum_reverse! {
+    pub enum Tag {
+        b'U' = Uint,
+        b'I' = Int,
+
+        b'N' = Uints,
+        b'B' = Bytes,
+        b'S' = String,
+
+        b'L' = List,
+        b'P' = Tuple,
+
+        b'A' = Alias,
+        b'E' = Enum,
+        b'C' = Choice,
+        b'R' = Struct,
+
+        b'T' = Type,
+        b'D' = TypeId,
+    } as u8 else Error::Tag
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Type {
+    Unknown,
+
+    Uint,
+    Int,
+
+    Uints,
+    Bytes,
+    String,
+
+    List(Box<Type>),
+    Tuple(Box<[Type]>),
+
+    Alias(TypeId),
+    Enum(TypeId),
+    Choice(TypeId),
+    Struct(TypeId),
+
+    Type,
+    TypeId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TypeId {
+    Anonymous,
+    Std { schema: u128, id: u128 },
+    // TODO third-party
+}
+
+// TODO impl<B1: PartialEq<B2>, B2> PartialEq&PartialOrd<Value<B2>> for Value<B1>
+// TODO variant structs?
+// TODO no value & matching r&w api
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Value<B: AsRef<[u8]> + ByteStorage> {
+    Uint(u128),
+    Int(i128),
+
+    Uints(Box<[u128]>),
+    Bytes(B),
+    String(Box<[u32]>),
+
+    List(Type, Box<[Value<B>]>),
+    Tuple(Box<[Value<B>]>),
+
+    Alias(TypeId, Box<Value<B>>),
+    Enum(TypeId, VariantId),
+    Choice(TypeId, VariantId, Box<Value<B>>),
+    Struct(TypeId, Box<[Value<B>]>),
+
+    Type(Type),
+    TypeId(TypeId),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FullError<B> {
+    pub err: Error,
+    pub buf: B,
+    pub pos: usize,
+}
+
+error_enum! {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub enum Error {
+        // TODO temp solution
+        TooLongLen(usize),
+        Tag(u8),
+        LEB128TooLong,
+    } convert {
+        Read => ReadError,
+        Fatal => Fatal,
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Fatal {
+}
+
+type Result<T> = core::result::Result<T, Error>;
+type FullResult<T, B> = core::result::Result<T, FullError<B>>;
+type FatalResult<T> = core::result::Result<T, Fatal>;
+
+pub mod casting;
+pub mod reader;
+pub mod writer;
