@@ -34,6 +34,39 @@ num_enum_reverse! {
     } as u8 else Error::Tag
 }
 
+num_enum_reverse! {
+    pub enum TypeTag {
+        b'0' = Unknown,
+
+        b'u' = Uint,
+        b'i' = Int,
+
+        b'n' = Uints,
+        b'b' = Bytes,
+        b's' = String,
+
+        // TODO: I&l distinguish?
+        b'l' = List,
+        b'p' = Tuple,
+
+        b'a' = Alias,
+        b'e' = Enum,
+        b'c' = Choice,
+        b'r' = Struct,
+
+        b't' = Type,
+        b'd' = TypeId,
+    } as u8 else Error::TypeTag
+}
+
+num_enum_reverse! {
+    pub enum TypeIdTag {
+        b'x' = Anonymous,
+        b'y' = Std,
+        // b'z' = ThirdParty,
+    } as u8 else Error::TypeIdTag
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Type {
     Unknown,
@@ -101,6 +134,8 @@ error_enum! {
         // TODO temp solution
         TooLongLen(usize),
         Tag(u8),
+        TypeTag(u8),
+        TypeIdTag(u8),
         LEB128TooLong,
     } convert {
         Read => ReadError,
@@ -117,5 +152,8 @@ type FullResult<T, B> = core::result::Result<T, FullError<B>>;
 type FatalResult<T> = core::result::Result<T, Fatal>;
 
 pub mod casting;
+pub mod ty;
+pub mod type_id;
+
 pub mod reader;
 pub mod writer;
