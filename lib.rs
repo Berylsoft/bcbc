@@ -152,7 +152,7 @@ type FullResult<T, B> = core::result::Result<T, FullError<B>>;
 type FatalResult<T> = core::result::Result<T, Fatal>;
 
 pub mod casting;
-pub mod ty;
+pub mod r#type;
 pub mod type_id;
 
 pub mod reader;

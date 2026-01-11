@@ -80,14 +80,47 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn ty<B: AsRef<[u8]> + ByteStorage>(&mut self, ty: Type) {
-        self.value(ty.encode::<B>());
+    fn r#type<B: AsRef<[u8]> + ByteStorage>(&mut self, r#type: Type) {
+        self.value(r#type.encode::<B>());
     }
 
-    fn list<B: AsRef<[u8]> + ByteStorage>(&mut self, ty: Type, values: Box<[Value<B>]>) {
+    fn type_id<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: TypeId) {
+        self.value(type_id.encode::<B>());
+    }
+
+    fn list<B: AsRef<[u8]> + ByteStorage>(&mut self, r#type: Type, values: Box<[Value<B>]>) {
         self.value(Value::Tuple(Box::new([
-            Value::Type(ty),
+            Value::Type(r#type),
             Value::Tuple(values)
+        ])));
+    }
+
+    fn alias<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: TypeId, value: Value<B>) {
+        self.value(Value::Tuple(Box::new([
+            Value::TypeId(type_id),
+            value,
+        ])));
+    }
+
+    fn r#enum<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: TypeId, var_id: VariantId) {
+        self.value(Value::Tuple(Box::new([
+            Value::<B>::TypeId(type_id),
+            Value::Uint(var_id),
+        ])));
+    }
+
+    fn choice<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: TypeId, var_id: VariantId, value: Value<B>) {
+        self.value(Value::Tuple(Box::new([
+            Value::TypeId(type_id),
+            Value::Uint(var_id),
+            value,
+        ])));
+    }
+
+    fn r#struct<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: TypeId, values: Box<[Value<B>]>) {
+        self.value(Value::Tuple(Box::new([
+            Value::TypeId(type_id),
+            Value::Tuple(values),
         ])));
     }
 
@@ -101,13 +134,13 @@ impl<O: Output> Writer<O> {
             Value::String(usvs) => self.string(usvs),
             Value::Tuple(values) => self.tuple(values),
 
-            Value::List(ty, values) => self.list(ty, values),
-            Value::Alias(type_id, value) => todo!(),
-            Value::Enum(type_id, var_id) => todo!(),
-            Value::Choice(type_id, var_id, value) => todo!(),
-            Value::Struct(type_id, values) => todo!(),
-            Value::Type(ty) => self.ty::<B>(ty),
-            Value::TypeId(type_id) => todo!(),
+            Value::List(r#type, values) => self.list(r#type, values),
+            Value::Alias(type_id, value) => self.alias(type_id, *value),
+            Value::Enum(type_id, var_id) => self.r#enum::<B>(type_id, var_id),
+            Value::Choice(type_id, var_id, value) => self.choice(type_id, var_id, *value),
+            Value::Struct(type_id, values) => self.r#struct(type_id, values),
+            Value::Type(ty) => self.r#type::<B>(ty),
+            Value::TypeId(type_id) => self.type_id::<B>(type_id),
         }
     }
 }
