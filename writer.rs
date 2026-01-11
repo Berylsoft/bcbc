@@ -87,10 +87,10 @@ impl<O: Output> Writer<O> {
         self.bytes(bytes);
     }
 
-    fn v_string(&mut self, chars: &[char]) {
+    fn v_string(&mut self, chars: impl Iterator<Item = char>) {
         self.tag(Tag::String);
         for char in chars {
-            self.uleb128(*char as u128);
+            self.uleb128(char as u128);
         }
     }
 
@@ -223,7 +223,7 @@ impl<O: Output> Writer<O> {
             Value::Int(n) => self.v_int(*n),
             Value::Uints(uints) => self.v_uints(uints),
             Value::Bytes(bytes) => self.v_bytes(bytes),
-            Value::String(chars) => self.v_string(chars),
+            Value::String(chars) => self.v_string(chars.iter().copied()),
             Value::List(r#type, values) => self.v_list(r#type, values),
             Value::Tuple(values) => self.v_tuple(values),
             Value::Alias(type_id, value) => self.v_alias(type_id, value),
