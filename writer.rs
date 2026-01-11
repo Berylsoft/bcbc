@@ -67,7 +67,7 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn string(&mut self, usvs: Box<[u32]>) {
+    fn string(&mut self, usvs: Box<[char]>) {
         for n in usvs {
             self.uleb128(n as u128);
         }

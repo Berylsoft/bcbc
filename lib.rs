@@ -107,7 +107,7 @@ pub enum Value<B: AsRef<[u8]> + ByteStorage> {
 
     Uints(Box<[u128]>),
     Bytes(B),
-    String(Box<[u32]>),
+    String(Box<[char]>),
 
     List(Type, Box<[Value<B>]>),
     Tuple(Box<[Value<B>]>),
