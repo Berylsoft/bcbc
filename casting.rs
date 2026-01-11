@@ -68,7 +68,7 @@ impl Type {
 }
 
 impl TypeId {
-    pub fn as_type_id_tag(&self) -> TypeIdTag {
+    pub const fn as_type_id_tag(&self) -> TypeIdTag {
         macro_rules! as_tag_impl {
             (
                 empty {$($empty_name:ident)*}

@@ -91,7 +91,7 @@ impl<O: Output> Writer<O> {
     fn list<B: AsRef<[u8]> + ByteStorage>(&mut self, r#type: Type, values: Box<[Value<B>]>) {
         self.value(Value::Tuple(Box::new([
             Value::Type(r#type),
-            Value::Tuple(values)
+            Value::Tuple(values),
         ])));
     }
 
