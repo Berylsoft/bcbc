@@ -165,13 +165,21 @@ impl<O: Output> Writer<O> {
 
     fn h_list_need_values(&mut self, r#type: &Type, len: u128) {
         self.h_tuple_like_need_values(Tag::List, 2);
-        self.v_type(r#type);
-        self.h_tuple_need_values(len);
+        let is_none = len == 0;
+        self.v_uint(is_none as u128);
+        if is_none {
+            self.v_type(r#type);
+        } else {
+            self.h_tuple_need_values(len);
+        }
     }
 
-    fn h_option_need_value_or_unit(&mut self, r#type: &Type) {
+    fn h_option_may_need_value(&mut self, r#type: &Type, is_none: bool) {
         self.h_tuple_like_need_values(Tag::Option, 2);
-        self.v_type(r#type);
+        self.v_uint(is_none as u128);
+        if is_none {
+            self.v_type(r#type);
+        }
     }
 
     fn v_generics(&mut self, generics: &[Type]) {
@@ -225,11 +233,9 @@ impl<O: Output> Writer<O> {
     }
 
     fn v_option<B: AsRef<[u8]> + ByteStorage>(&mut self, r#type: &Type, value: Option<&Value<B>>) {
-        self.h_option_need_value_or_unit(r#type);
+        self.h_option_may_need_value(r#type, value.is_none());
         if let Some(value) = value {
             self.value(value);
-        } else {
-            self.h_tuple_need_values(0);
         }
     }
 
