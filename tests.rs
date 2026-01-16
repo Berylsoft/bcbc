@@ -1,8 +1,9 @@
+use hex_literal::hex;
 use crate::*;
 
 macro_rules! expb {
     ($s:literal) => {
-        hex_literal::hex!($s).as_slice()
+        hex!($s).as_slice()
     };
 }
 
@@ -17,8 +18,8 @@ fn s<S: ?Sized + AsRef<str>>(bytes: &S) -> Box<[char]> {
 }
 
 macro_rules! seq {
-    ($($x:expr),+ $(,)?) => {
-        Box::new([$($x),+])
+    ($($x:expr),* $(,)?) => {
+        Box::new([$($x),*])
     };
 }
 
@@ -32,10 +33,10 @@ fn cases() {
         println!("{:?}", &v);
         let buf = v.encode::<VecOutput>();
         println!("len={}", exp.len());
-        println!("{}", hex::encode(&exp));
+        println!("{}", hex::encode(exp));
         println!("len={}", buf.len());
         println!("{}", hex::encode(&buf));
-        assert_eq!(&buf, &exp);
+        assert_eq!(&buf, exp);
         // let v2 = Value::decode::<SliceInput>(&buf).unwrap();
         // assert_eq!(v, v2);
     }
@@ -68,19 +69,15 @@ fn cases() {
         4c 02
             54 02
                 55 70
-                4c 02
+                50 02
                     54 02
-                        55 74
+                        55 75
                         50 00
-                    50 02
+                    54 02
+                        55 6c
                         54 02
-                            55 75
+                            55 73
                             50 00
-                        54 02
-                            55 6c
-                            54 02
-                                55 73
-                                50 00
             50 02
                 50 02
                     55 7b

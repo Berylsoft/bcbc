@@ -125,17 +125,6 @@ impl<O: Output> Writer<O> {
         };
     }
 
-    fn h_list_need_values(&mut self, r#type: &Type, len: u128) {
-        self.h_tuple_like_need_values(Tag::List, 2);
-        self.v_type(r#type);
-        self.h_tuple_need_values(len);
-    }
-
-    fn h_option_need_value_or_unit(&mut self, r#type: &Type) {
-        self.h_tuple_like_need_values(Tag::Option, 2);
-        self.v_type(r#type);
-    }
-
     fn v_type(&mut self, r#type: &Type) {
         self.h_tuple_like_need_values(Tag::Type, 2);
         self.v_uint(r#type.as_type_tag() as u8 as u128);
@@ -154,7 +143,7 @@ impl<O: Output> Writer<O> {
 
             Type::Tuple(value_types) => {
                 // if uses list here, h_list and v_type refer to each other. may causes dead loop?
-                self.h_list_need_values(&Type::Type, value_types.len() as u128);
+                self.h_tuple_need_values(value_types.len() as u128);
                 for value_type in value_types {
                     self.v_type(value_type);
                 }
@@ -174,8 +163,19 @@ impl<O: Output> Writer<O> {
         }
     }
 
+    fn h_list_need_values(&mut self, r#type: &Type, len: u128) {
+        self.h_tuple_like_need_values(Tag::List, 2);
+        self.v_type(r#type);
+        self.h_tuple_need_values(len);
+    }
+
+    fn h_option_need_value_or_unit(&mut self, r#type: &Type) {
+        self.h_tuple_like_need_values(Tag::Option, 2);
+        self.v_type(r#type);
+    }
+
     fn v_generics(&mut self, generics: &[Type]) {
-        self.h_list_need_values(&Type::Type, generics.len() as u128);
+        self.h_tuple_need_values(generics.len() as u128);
         for generic in generics {
             self.v_type(generic);
         }
