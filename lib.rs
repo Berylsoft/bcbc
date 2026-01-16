@@ -16,13 +16,16 @@ num_enum_reverse! {
     pub enum Tag {
         b'U' = Uint,
         b'I' = Int,
+        b'F' = Bool,
 
         b'N' = Uints,
         b'B' = Bytes,
         b'S' = String,
 
-        b'L' = List,
         b'P' = Tuple,
+        b'L' = List,
+        // TODO: O&0 distinguish?
+        b'O' = Option,
 
         b'A' = Alias,
         b'E' = Enum,
@@ -40,14 +43,16 @@ num_enum_reverse! {
 
         b'u' = Uint,
         b'i' = Int,
+        b'f' = Bool,
 
         b'n' = Uints,
         b'b' = Bytes,
         b's' = String,
 
+        b'p' = Tuple,
         // TODO: I&l distinguish?
         b'l' = List,
-        b'p' = Tuple,
+        b'o' = Option,
 
         b'a' = Alias,
         b'e' = Enum,
@@ -73,13 +78,15 @@ pub enum Type {
 
     Uint,
     Int,
+    Bool,
 
     Uints,
     Bytes,
     String,
 
-    List(Box<Type>),
     Tuple(Box<[Type]>),
+    List(Box<Type>),
+    Option(Box<Type>),
 
     Alias(TypeId),
     Enum(TypeId),
@@ -104,13 +111,15 @@ pub enum TypeId {
 pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     Uint(u128),
     Int(i128),
+    Bool(bool),
 
     Uints(Box<[u128]>),
     Bytes(B),
     String(Box<[char]>),
 
-    List(Type, Box<[Value<B>]>),
     Tuple(Box<[Value<B>]>),
+    List(Type, Box<[Value<B>]>),
+    Option(Type, Option<Box<Value<B>>>),
 
     Alias(TypeId, Box<[Type]>, Box<Value<B>>),
     Enum(TypeId, Box<[Type]>, VariantId),

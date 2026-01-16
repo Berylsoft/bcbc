@@ -75,6 +75,11 @@ impl<O: Output> Writer<O> {
         self.sleb128(n);
     }
 
+    fn v_bool(&mut self, n: bool) {
+        self.tag(Tag::Bool);
+        self.uleb128(n as u128);
+    }
+
     fn v_uints(&mut self, uints: &[u128]) {
         self.tag(Tag::Uints);
         self.uleb128(uints.len() as u128);
@@ -128,6 +133,11 @@ impl<O: Output> Writer<O> {
         self.h_tuple_need_values(len);
     }
 
+    fn h_option_need_value_or_unit(&mut self, r#type: &Type) {
+        self.h_tuple_like_need_values(Tag::Option, 2);
+        self.v_type(r#type);
+    }
+
     fn v_type(&mut self, r#type: &Type) {
         self.h_tuple_like_need_values(Tag::Type, 2);
         self.v_uint(r#type.as_type_tag() as u8 as u128);
@@ -135,6 +145,7 @@ impl<O: Output> Writer<O> {
             Type::Unknown
             | Type::Uint
             | Type::Int
+            | Type::Bool
             | Type::Uints
             | Type::Bytes
             | Type::String
@@ -143,16 +154,17 @@ impl<O: Output> Writer<O> {
                 self.h_tuple_need_values(0);
             }
 
-            Type::List(type2) => {
-                self.v_type(type2);
-            }
-
             Type::Tuple(value_types) => {
                 // if uses list here, h_list and v_type refer to each other. may causes dead loop?
                 self.h_list_need_values(&Type::Type, value_types.len() as u128);
                 for value_type in value_types {
                     self.v_type(value_type);
                 }
+            }
+
+            Type::List(type2)
+            | Type::Option(type2) => {
+                self.v_type(type2);
             }
 
             Type::Alias(type_id)
@@ -214,6 +226,15 @@ impl<O: Output> Writer<O> {
         }
     }
 
+    fn v_option<B: AsRef<[u8]> + ByteStorage>(&mut self, r#type: &Type, value: Option<&Value<B>>) {
+        self.h_option_need_value_or_unit(r#type);
+        if let Some(value) = value {
+            self.value(value);
+        } else {
+            self.h_tuple_need_values(0);
+        }
+    }
+
     fn v_alias<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, generics: &[Type], value: &Value<B>) {
         self.h_alias_need_value(type_id, generics);
         self.value(value);
@@ -235,11 +256,13 @@ impl<O: Output> Writer<O> {
         match value {
             Value::Uint(n) => self.v_uint(*n),
             Value::Int(n) => self.v_int(*n),
+            Value::Bool(n) => self.v_bool(*n),
             Value::Uints(uints) => self.v_uints(uints),
             Value::Bytes(bytes) => self.v_bytes(bytes),
             Value::String(chars) => self.v_string(chars),
-            Value::List(r#type, values) => self.v_list(r#type, values),
             Value::Tuple(values) => self.v_tuple(values),
+            Value::List(r#type, values) => self.v_list(r#type, values),
+            Value::Option(r#type, value) => self.v_option(r#type, value.as_deref()),
             Value::Alias(type_id, generics, value) => self.v_alias(type_id, generics, value),
             Value::Enum(type_id, generics, var_id) => self.v_enum(type_id, generics, *var_id),
             Value::Choice(type_id, generics, var_id, value) => self.v_choice(type_id, generics, *var_id, value),

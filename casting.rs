@@ -15,11 +15,13 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
         as_tag_impl! {
             Uint
             Int
+            Bool
             Uints
             String
             Bytes
-            List
             Tuple
+            List
+            Option
             Alias
             Enum
             Choice
@@ -49,6 +51,7 @@ impl Type {
                 Unknown
                 Uint
                 Int
+                Bool
                 Uints
                 String
                 Bytes
@@ -56,8 +59,9 @@ impl Type {
                 TypeId
             }
             non_empty {
-                List
                 Tuple
+                List
+                Option
                 Alias
                 Enum
                 Choice
