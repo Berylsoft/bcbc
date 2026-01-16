@@ -164,26 +164,37 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn h_alias_need_value(&mut self, type_id: &TypeId) {
-        self.h_tuple_like_need_values(Tag::Alias, 2);
-        self.v_type_id(type_id);
+    fn v_generics(&mut self, generics: &[Type]) {
+        self.h_list_need_values(&Type::Type, generics.len() as u128);
+        for generic in generics {
+            self.v_type(generic);
+        }
     }
 
-    fn v_enum(&mut self, type_id: &TypeId, var_id: VariantId) {
-        self.h_tuple_like_need_values(Tag::Enum, 2);
+    fn h_alias_need_value(&mut self, type_id: &TypeId, generics: &[Type]) {
+        self.h_tuple_like_need_values(Tag::Alias, 3);
         self.v_type_id(type_id);
+        self.v_generics(generics);
+    }
+
+    fn v_enum(&mut self, type_id: &TypeId, generics: &[Type], var_id: VariantId) {
+        self.h_tuple_like_need_values(Tag::Enum, 3);
+        self.v_type_id(type_id);
+        self.v_generics(generics);
         self.v_uint(var_id);
     }
 
-    fn h_choice_need_value(&mut self, type_id: &TypeId, var_id: VariantId) {
-        self.h_tuple_like_need_values(Tag::Choice, 3);
+    fn h_choice_need_value(&mut self, type_id: &TypeId, generics: &[Type], var_id: VariantId) {
+        self.h_tuple_like_need_values(Tag::Choice, 4);
         self.v_type_id(type_id);
+        self.v_generics(generics);
         self.v_uint(var_id);
     }
 
-    fn h_struct_need_values(&mut self, type_id: &TypeId, len: u128) {
-        self.h_tuple_like_need_values(Tag::Struct, 2);
+    fn h_struct_need_values(&mut self, type_id: &TypeId, generics: &[Type], len: u128) {
+        self.h_tuple_like_need_values(Tag::Struct, 3);
         self.v_type_id(type_id);
+        self.v_generics(generics);
         self.h_tuple_need_values(len);
     }
 }
@@ -203,18 +214,18 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn v_alias<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, value: &Value<B>) {
-        self.h_alias_need_value(type_id);
+    fn v_alias<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, generics: &[Type], value: &Value<B>) {
+        self.h_alias_need_value(type_id, generics);
         self.value(value);
     }
 
-    fn v_choice<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, var_id: VariantId, value: &Value<B>) {
-        self.h_choice_need_value(type_id, var_id);
+    fn v_choice<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, generics: &[Type], var_id: VariantId, value: &Value<B>) {
+        self.h_choice_need_value(type_id, generics, var_id);
         self.value(value);
     }
 
-    fn v_struct<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, values: &[Value<B>]) {
-        self.h_struct_need_values(type_id, values.len() as u128);
+    fn v_struct<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, generics: &[Type], values: &[Value<B>]) {
+        self.h_struct_need_values(type_id, generics, values.len() as u128);
         for value in values {
             self.value(value);
         }
@@ -229,10 +240,10 @@ impl<O: Output> Writer<O> {
             Value::String(chars) => self.v_string(chars),
             Value::List(r#type, values) => self.v_list(r#type, values),
             Value::Tuple(values) => self.v_tuple(values),
-            Value::Alias(type_id, value) => self.v_alias(type_id, value),
-            Value::Enum(type_id, var_id) => self.v_enum(type_id, *var_id),
-            Value::Choice(type_id, var_id, value) => self.v_choice(type_id, *var_id, value),
-            Value::Struct(type_id, values) => self.v_struct(type_id, values),
+            Value::Alias(type_id, generics, value) => self.v_alias(type_id, generics, value),
+            Value::Enum(type_id, generics, var_id) => self.v_enum(type_id, generics, *var_id),
+            Value::Choice(type_id, generics, var_id, value) => self.v_choice(type_id, generics, *var_id, value),
+            Value::Struct(type_id, generics, values) => self.v_struct(type_id, generics, values),
             Value::Type(r#type) => self.v_type(r#type),
             Value::TypeId(type_id) => self.v_type_id(type_id),
         }

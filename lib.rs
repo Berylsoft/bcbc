@@ -112,10 +112,10 @@ pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     List(Type, Box<[Value<B>]>),
     Tuple(Box<[Value<B>]>),
 
-    Alias(TypeId, Box<Value<B>>),
-    Enum(TypeId, VariantId),
-    Choice(TypeId, VariantId, Box<Value<B>>),
-    Struct(TypeId, Box<[Value<B>]>),
+    Alias(TypeId, Box<[Type]>, Box<Value<B>>),
+    Enum(TypeId, Box<[Type]>, VariantId),
+    Choice(TypeId, Box<[Type]>, VariantId, Box<Value<B>>),
+    Struct(TypeId, Box<[Type]>, Box<[Value<B>]>),
 
     Type(Type),
     TypeId(TypeId),
