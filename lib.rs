@@ -100,7 +100,7 @@ pub enum Type {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TypeId {
     Anonymous,
-    Std { schema: u128, id: u128 },
+    Std(u128),
     // TODO third-party
 }
 

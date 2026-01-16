@@ -119,9 +119,7 @@ impl<O: Output> Writer<O> {
             TypeId::Anonymous => {
                 self.h_tuple_need_values(0);
             }
-            TypeId::Std { schema, id } => {
-                self.h_tuple_need_values(2);
-                self.v_uint(*schema);
+            TypeId::Std(id) => {
                 self.v_uint(*id);
             }
         };
