@@ -30,6 +30,50 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
             TypeId
         }
     }
+
+    fn as_type(&self) -> Type {
+        macro_rules! as_type_impl {
+            (
+                direct {$($direct_name:ident)*}
+                type {$($type_name:ident)*}
+                type_id {$($type_id_name:ident)*}
+                $($tt:tt)*
+            ) => {
+                match self {
+                    $(Value::$direct_name(..) => Type::$direct_name,)*
+                    $($tt)*
+                    $(Value::$type_name(r#type, ..) => Type::$type_name(Box::new(r#type.clone())),)*
+                    $(Value::$type_id_name(type_id, ..) => Type::$type_id_name(type_id.clone()),)*
+                }
+            };
+        }
+
+        as_type_impl! {
+            direct {
+                Uint
+                Int
+                Bool
+                Uints
+                Bytes
+                String
+                Type
+                TypeId
+            }
+            type {
+                List
+                Option
+            }
+            type_id {
+                Alias
+                Enum
+                Choice
+                Struct
+            }
+            Value::Tuple(values) => {
+                Type::Tuple(values.iter().map(|value| value.as_type()).collect())
+            }
+        }
+    }
 }
 
 impl Type {
