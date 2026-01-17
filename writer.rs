@@ -1,4 +1,4 @@
-use super::*;
+use super::{*, leb128_num_traits::*};
 
 // TODO writer error?
 
@@ -29,15 +29,15 @@ impl<O: Output> Writer<O> {
 
     // end wrapper impls
 
-    // https://github.com/BillGoldenWater/playground/blob/eb898e9/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/2ad09e4/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
-    fn uleb128(&mut self, mut n: u128) {
+    fn uleb128(&mut self, mut n: impl NumUnsigned) {
         loop {
-            let byte = n as u8 & 0x7F;
-            n >>= 7;
+            let byte = n.trunc_u8() & 0x7F;
+            n.shr_assign(7);
 
-            if n == 0 {
+            if n.all_zero() {
                 self.byte(byte);
                 break;
             } else {
@@ -46,13 +46,15 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn sleb128(&mut self, mut n: i128) {
+    fn sleb128(&mut self, n: impl NumSigned) {
+        let mut n = n.as_unsigned();
         loop {
-            let byte = n as u8 & 0x7F;
-            n >>= 7;
+            let byte = n.trunc_u8() & 0x7F;
+            n.sar_assign(7);
 
             let sign = byte & 0x40;
-            if (n == 0 && sign == 0) || (n == -1 && sign != 0) {
+            if (n.all_zero() && sign == 0) || (n.all_one() && sign != 0)
+            {
                 self.byte(byte);
                 break;
             } else {

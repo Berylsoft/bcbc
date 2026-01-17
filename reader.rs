@@ -1,4 +1,4 @@
-use super::*;
+use super::{*, leb128_num_traits::*};
 
 struct Reader<I> {
     inner: byte_storage::Reader<I>,
@@ -69,16 +69,16 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         }
     }
 
-    // https://github.com/BillGoldenWater/playground/blob/eb898e9/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/2ad09e4/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
-    fn uleb128(&mut self) -> Result<u128> {
-        let mut res = 0;
+    fn uleb128<N: NumUnsigned>(&mut self) -> Result<N> {
+        let mut res = N::from_u8(0);
         let mut shift = 0;
         let mut byte = self.byte()?;
 
         loop {
-            res |= ((byte & 0x7F) as u128) << shift;
+            res.shifted_or_assign(byte & 0x7F, shift);
             shift += 7;
 
             if byte & 0x80 == 0 {
@@ -95,13 +95,13 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         Ok(res)
     }
 
-    fn sleb128(&mut self) -> Result<i128> {
-        let mut res = 0;
+    fn sleb128<N: NumSigned>(&mut self) -> Result<N> {
+        let mut res = N::UnsignedVariant::from_u8(0);
         let mut shift = 0;
         let mut byte = self.byte()?;
 
         loop {
-            res |= ((byte & 0x7F) as u128) << shift;
+            res.shifted_or_assign(byte & 0x7F, shift);
             shift += 7;
 
             if byte & 0x80 == 0 {
@@ -115,11 +115,13 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
             byte = self.byte()?;
         }
 
-        if shift < u128::BITS && byte & 0x40 != 0 {
-            res |= u128::MAX.wrapping_shl(shift);
+        let mut res = N::from_unsigned(res);
+
+        if shift < N::UnsignedVariant::BITS && byte & 0x40 != 0 {
+            res.one_fill_left(shift);
         }
 
-        Ok(res as i128)
+        Ok(res)
     }
 
     fn val(&mut self) -> Result<Value<B>> {

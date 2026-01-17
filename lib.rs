@@ -160,6 +160,7 @@ type Result<T> = core::result::Result<T, Error>;
 type FullResult<T, B> = core::result::Result<T, FullError<B>>;
 type FatalResult<T> = core::result::Result<T, Fatal>;
 
+pub(crate) mod leb128_num_traits;
 pub mod casting;
 
 pub mod reader;
