@@ -67,24 +67,24 @@ impl<O: Output> Writer<O> {
         self.byte(tag as u8);
     }
 
-    fn v_uint(&mut self, n: u128) {
+    fn v_uint(&mut self, n: impl NumUnsigned) {
         self.tag(Tag::Uint);
         self.uleb128(n);
     }
 
-    fn v_int(&mut self, n: i128) {
+    fn v_int(&mut self, n: impl NumSigned) {
         self.tag(Tag::Int);
         self.sleb128(n);
     }
 
     fn v_bool(&mut self, n: bool) {
         self.tag(Tag::Bool);
-        self.uleb128(n as u128);
+        self.uleb128(n as u8);
     }
 
-    fn v_uints(&mut self, uints: &[u128]) {
+    fn v_uints(&mut self, uints: &[impl NumUnsigned]) {
         self.tag(Tag::Uints);
-        self.uleb128(uints.len() as u128);
+        self.uleb128(uints.len());
         for n in uints {
             self.uleb128(*n);
         }
@@ -92,34 +92,34 @@ impl<O: Output> Writer<O> {
 
     fn v_bytes<B: AsRef<[u8]> + ByteStorage>(&mut self, bytes: B) {
         self.tag(Tag::Bytes);
-        self.uleb128(bytes.as_ref().len() as u128);
+        self.uleb128(bytes.as_ref().len());
         self.bytes(bytes);
     }
 
     fn v_string(&mut self, chars: &[char]) {
         self.tag(Tag::String);
-        self.uleb128(chars.len() as u128);
+        self.uleb128(chars.len());
         for char in chars {
-            self.uleb128(*char as u128);
+            self.uleb128(*char as u32);
         }
     }
 
-    fn h_tuple_need_values(&mut self, len: u128) {
+    fn h_tuple_need_values(&mut self, len: impl NumUnsigned) {
         self.tag(Tag::Tuple);
         self.uleb128(len);
     }
 
-    fn h_tuple_like_need_values(&mut self, tag: Tag, len: u128) {
+    fn h_tuple_like_need_values(&mut self, tag: Tag, len: impl NumUnsigned) {
         self.tag(tag);
         self.uleb128(len);
     }
 
     fn v_type_id(&mut self, type_id: &TypeId) {
-        self.h_tuple_like_need_values(Tag::TypeId, 2);
-        self.v_uint(type_id.as_type_id_tag() as u8 as u128);
+        self.h_tuple_like_need_values(Tag::TypeId, 2u8);
+        self.v_uint(type_id.as_type_id_tag() as u8);
         match type_id {
             TypeId::Anonymous => {
-                self.h_tuple_need_values(0);
+                self.h_tuple_need_values(0u8);
             }
             TypeId::Std(id) => {
                 self.v_uint(*id);
@@ -128,8 +128,8 @@ impl<O: Output> Writer<O> {
     }
 
     fn v_type(&mut self, r#type: &Type) {
-        self.h_tuple_like_need_values(Tag::Type, 2);
-        self.v_uint(r#type.as_type_tag() as u8 as u128);
+        self.h_tuple_like_need_values(Tag::Type, 2u8);
+        self.v_uint(r#type.as_type_tag() as u8);
         match r#type {
             Type::Unknown
             | Type::Uint
@@ -140,12 +140,12 @@ impl<O: Output> Writer<O> {
             | Type::String
             | Type::Type
             | Type::TypeId => {
-                self.h_tuple_need_values(0);
+                self.h_tuple_need_values(0u8);
             }
 
             Type::Tuple(value_types) => {
                 // if uses list here, h_list and v_type refer to each other. may causes dead loop?
-                self.h_tuple_need_values(value_types.len() as u128);
+                self.h_tuple_need_values(value_types.len());
                 for value_type in value_types {
                     self.v_type(value_type);
                 }
@@ -165,10 +165,10 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn h_list_need_values(&mut self, r#type: &Type, len: u128) {
-        self.h_tuple_like_need_values(Tag::List, 2);
-        let is_none = len == 0;
-        self.v_uint(is_none as u128);
+    fn h_list_need_values(&mut self, r#type: &Type, len: impl NumUnsigned) {
+        self.h_tuple_like_need_values(Tag::List, 2u8);
+        let is_none = len.all_zero();
+        self.v_uint(is_none as u8);
         if is_none {
             self.v_type(r#type);
         } else {
@@ -177,42 +177,42 @@ impl<O: Output> Writer<O> {
     }
 
     fn h_option_may_need_value(&mut self, r#type: &Type, is_none: bool) {
-        self.h_tuple_like_need_values(Tag::Option, 2);
-        self.v_uint(is_none as u128);
+        self.h_tuple_like_need_values(Tag::Option, 2u8);
+        self.v_uint(is_none as u8);
         if is_none {
             self.v_type(r#type);
         }
     }
 
     fn v_generics(&mut self, generics: &[Type]) {
-        self.h_tuple_need_values(generics.len() as u128);
+        self.h_tuple_need_values(generics.len());
         for generic in generics {
             self.v_type(generic);
         }
     }
 
     fn h_alias_need_value(&mut self, type_id: &TypeId, generics: &[Type]) {
-        self.h_tuple_like_need_values(Tag::Alias, 3);
+        self.h_tuple_like_need_values(Tag::Alias, 3u8);
         self.v_type_id(type_id);
         self.v_generics(generics);
     }
 
     fn v_enum(&mut self, type_id: &TypeId, generics: &[Type], var_id: VariantId) {
-        self.h_tuple_like_need_values(Tag::Enum, 3);
+        self.h_tuple_like_need_values(Tag::Enum, 3u8);
         self.v_type_id(type_id);
         self.v_generics(generics);
         self.v_uint(var_id);
     }
 
     fn h_choice_need_value(&mut self, type_id: &TypeId, generics: &[Type], var_id: VariantId) {
-        self.h_tuple_like_need_values(Tag::Choice, 4);
+        self.h_tuple_like_need_values(Tag::Choice, 4u8);
         self.v_type_id(type_id);
         self.v_generics(generics);
         self.v_uint(var_id);
     }
 
-    fn h_struct_need_values(&mut self, type_id: &TypeId, generics: &[Type], len: u128) {
-        self.h_tuple_like_need_values(Tag::Struct, 3);
+    fn h_struct_need_values(&mut self, type_id: &TypeId, generics: &[Type], len: impl NumUnsigned) {
+        self.h_tuple_like_need_values(Tag::Struct, 3u8);
         self.v_type_id(type_id);
         self.v_generics(generics);
         self.h_tuple_need_values(len);
@@ -221,14 +221,14 @@ impl<O: Output> Writer<O> {
 
 impl<O: Output> Writer<O> {
     fn v_tuple<B: AsRef<[u8]> + ByteStorage>(&mut self, values: &[Value<B>]) {
-        self.h_tuple_need_values(values.len() as u128);
+        self.h_tuple_need_values(values.len());
         for value in values {
             self.value(value);
         }
     }
 
     fn v_list<B: AsRef<[u8]> + ByteStorage>(&mut self, r#type: &Type, values: &[Value<B>]) {
-        self.h_list_need_values(r#type, values.len() as u128);
+        self.h_list_need_values(r#type, values.len());
         for value in values {
             self.value(value);
         }
@@ -252,7 +252,7 @@ impl<O: Output> Writer<O> {
     }
 
     fn v_struct<B: AsRef<[u8]> + ByteStorage>(&mut self, type_id: &TypeId, generics: &[Type], values: &[Value<B>]) {
-        self.h_struct_need_values(type_id, generics, values.len() as u128);
+        self.h_struct_need_values(type_id, generics, values.len());
         for value in values {
             self.value(value);
         }

@@ -1,7 +1,7 @@
 // https://github.com/BillGoldenWater/playground/blob/2ad09e4/rust/leb128/src/lib.rs
 // TODO: byte-storage extension?
 
-pub trait NumUnsigned {
+pub trait NumUnsigned: Copy {
     const BITS: u32;
 
     fn from_u8(value: u8) -> Self;
@@ -14,7 +14,7 @@ pub trait NumUnsigned {
     fn shifted_or_assign(&mut self, rhs: u8, shift: u32);
 }
 
-pub trait NumSigned {
+pub trait NumSigned: Copy {
     type UnsignedVariant: NumUnsigned;
 
     fn as_unsigned(&self) -> Self::UnsignedVariant;
@@ -90,3 +90,4 @@ impl_num!(u64, i64);
 impl_num!(u32, i32);
 impl_num!(u16, i16);
 impl_num!(u8, i8);
+impl_num!(usize, isize);
