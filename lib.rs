@@ -122,7 +122,7 @@ pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     Option(Type, Option<Box<Value<B>>>),
 
     Alias(TypeId, Box<[Type]>, Box<Value<B>>),
-    Enum(TypeId, Box<[Type]>, VariantId),
+    Enum(TypeId, VariantId),
     Choice(TypeId, Box<[Type]>, VariantId, Box<Value<B>>),
     Struct(TypeId, Box<[Type]>, Box<[Value<B>]>),
 

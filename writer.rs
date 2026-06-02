@@ -197,10 +197,9 @@ impl<O: Output> Writer<O> {
         self.v_generics(generics);
     }
 
-    fn v_enum(&mut self, type_id: &TypeId, generics: &[Type], var_id: VariantId) {
-        self.h_tuple_like_need_values(Tag::Enum, 3u8);
+    fn v_enum(&mut self, type_id: &TypeId, var_id: VariantId) {
+        self.h_tuple_like_need_values(Tag::Enum, 2u8);
         self.v_type_id(type_id);
-        self.v_generics(generics);
         self.v_uint(var_id);
     }
 
@@ -270,7 +269,7 @@ impl<O: Output> Writer<O> {
             Value::List(r#type, values) => self.v_list(r#type, values),
             Value::Option(r#type, value) => self.v_option(r#type, value.as_deref()),
             Value::Alias(type_id, generics, value) => self.v_alias(type_id, generics, value),
-            Value::Enum(type_id, generics, var_id) => self.v_enum(type_id, generics, *var_id),
+            Value::Enum(type_id, var_id) => self.v_enum(type_id, *var_id),
             Value::Choice(type_id, generics, var_id, value) => self.v_choice(type_id, generics, *var_id, value),
             Value::Struct(type_id, generics, values) => self.v_struct(type_id, generics, values),
             Value::Type(r#type) => self.v_type(r#type),
