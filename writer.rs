@@ -168,7 +168,7 @@ impl<O: Output> Writer<O> {
     fn h_list_need_values(&mut self, r#type: &Type, len: impl NumUnsigned) {
         self.h_tuple_like_need_values(Tag::List, 2u8);
         let is_none = len.all_zero();
-        self.v_uint(is_none as u8);
+        self.v_bool(is_none);
         if is_none {
             self.v_type(r#type);
         } else {
@@ -178,7 +178,7 @@ impl<O: Output> Writer<O> {
 
     fn h_option_may_need_value(&mut self, r#type: &Type, is_none: bool) {
         self.h_tuple_like_need_values(Tag::Option, 2u8);
-        self.v_uint(is_none as u8);
+        self.v_bool(is_none);
         if is_none {
             self.v_type(r#type);
         }
