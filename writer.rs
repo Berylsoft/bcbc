@@ -156,11 +156,16 @@ impl<O: Output> Writer<O> {
                 self.v_type(type2);
             }
 
-            Type::Alias(type_id)
-            | Type::Enum(type_id)
-            | Type::Choice(type_id)
-            | Type::Struct(type_id) => {
+            Type::Enum(type_id) => {
                 self.v_type_id(type_id);
+            }
+
+            Type::Alias(type_id, generics)
+            | Type::Choice(type_id, generics)
+            | Type::Struct(type_id, generics) => {
+                self.h_tuple_need_values(2u8);
+                self.v_type_id(type_id);
+                self.v_generics(generics);
             }
         }
     }

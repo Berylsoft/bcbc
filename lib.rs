@@ -88,10 +88,10 @@ pub enum Type {
     List(Box<Type>),
     Option(Box<Type>),
 
-    Alias(TypeId),
+    Alias(TypeId, Box<[Type]>),
     Enum(TypeId),
-    Choice(TypeId),
-    Struct(TypeId),
+    Choice(TypeId, Box<[Type]>),
+    Struct(TypeId, Box<[Type]>),
 
     Type,
     TypeId,

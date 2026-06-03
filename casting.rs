@@ -37,6 +37,7 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
                 direct {$($direct_name:ident)*}
                 type {$($type_name:ident)*}
                 type_id {$($type_id_name:ident)*}
+                type_id generics {$($type_id_generics_name:ident)*}
                 $($tt:tt)*
             ) => {
                 match self {
@@ -44,6 +45,7 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
                     $($tt)*
                     $(Value::$type_name(r#type, ..) => Type::$type_name(Box::new(r#type.clone())),)*
                     $(Value::$type_id_name(type_id, ..) => Type::$type_id_name(type_id.clone()),)*
+                    $(Value::$type_id_generics_name(type_id, generics, ..) => Type::$type_id_generics_name(type_id.clone(), generics.clone()),)*
                 }
             };
         }
@@ -64,8 +66,10 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
                 Option
             }
             type_id {
-                Alias
                 Enum
+            }
+            type_id generics {
+                Alias
                 Choice
                 Struct
             }
