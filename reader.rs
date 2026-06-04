@@ -85,7 +85,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 break;
             }
 
-            if shift >= 128 {
+            if shift >= N::BITS {
                 return Err(Error::LEB128TooLong);
             }
 
@@ -108,7 +108,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 break;
             }
 
-            if shift >= 128 {
+            if shift >= N::UnsignedVariant::BITS {
                 return Err(Error::LEB128TooLong);
             }
 
