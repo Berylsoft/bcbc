@@ -34,6 +34,10 @@ num_enum_reverse! {
 
         b'T' = Type,
         b'D' = TypeId,
+
+        // implicit tuple types
+        b'M' = ListItems,
+        b'G' = Generics,
     } as u8 else Error::Tag
 }
 
@@ -146,6 +150,7 @@ error_enum! {
         TypeTag(u8),
         TypeIdTag(u8),
         LEB128TooLong,
+        U8ToBool(u8),
     } convert {
         Read => ReadError,
         Fatal => Fatal,

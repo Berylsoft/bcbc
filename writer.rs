@@ -175,7 +175,7 @@ impl<O: Output> Writer<O> {
         let is_some = !len.all_zero();
         self.v_bool(is_some);
         if is_some {
-            self.h_tuple_need_values(len);
+            self.h_tuple_like_need_values(Tag::ListItems, len);
         } else {
             self.v_type(r#type);
         }
@@ -190,7 +190,7 @@ impl<O: Output> Writer<O> {
     }
 
     fn v_generics(&mut self, generics: &[Type]) {
-        self.h_tuple_need_values(generics.len());
+        self.h_tuple_like_need_values(Tag::Generics, generics.len());
         for generic in generics {
             self.v_type(generic);
         }
