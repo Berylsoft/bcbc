@@ -1,4 +1,4 @@
-// https://github.com/BillGoldenWater/playground/blob/2ad09e4/rust/leb128/src/lib.rs
+// https://github.com/BillGoldenWater/playground/blob/a9f517d/rust/leb128/src/lib.rs
 // TODO: byte-storage extension?
 
 pub trait NumUnsigned: Copy {
@@ -12,6 +12,8 @@ pub trait NumUnsigned: Copy {
     fn shr_assign(&mut self, rhs: u32);
     fn sar_assign(&mut self, rhs: u32);
     fn shifted_or_assign(&mut self, rhs: u8, shift: u32);
+
+    fn to_u128(&self) -> u128;
 }
 
 pub trait NumSigned: Copy {
@@ -60,6 +62,10 @@ macro_rules! impl_num {
             #[inline]
             fn shifted_or_assign(&mut self, rhs: u8, shift: u32) {
                 *self |= (rhs as $ty) << shift;
+            }
+
+            fn to_u128(&self) -> u128 {
+                *self as u128
             }
         }
 

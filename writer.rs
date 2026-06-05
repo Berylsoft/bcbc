@@ -29,7 +29,7 @@ impl<O: Output> Writer<O> {
 
     // end wrapper impls
 
-    // https://github.com/BillGoldenWater/playground/blob/2ad09e4/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/a9f517d/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
     fn uleb128(&mut self, mut n: impl NumUnsigned) {

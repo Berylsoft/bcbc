@@ -1,5 +1,19 @@
 use super::{*, leb128_num_traits::*};
 
+// TODO(error_enum): generic support
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LEB128Error<T: NumUnsigned> {
+    TooLong { cur: T, shift: u32, byte: u8 },
+    TrailingEmptyBytes,
+    Read(ReadError),
+}
+
+impl<T: NumUnsigned> From<ReadError> for LEB128Error<T> {
+    fn from(err: ReadError) -> LEB128Error<T> {
+        LEB128Error::Read(err)
+    }
+}
+
 struct Reader<I> {
     inner: byte_storage::Reader<I>,
     max_lens: MaxLens,
@@ -14,8 +28,8 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
     }
 
     #[inline(always)]
-    pub fn byte(&mut self) -> Result<u8> {
-        Ok(self.inner.read_byte()?)
+    pub fn byte(&mut self) -> core::result::Result<u8, ReadError> {
+        self.inner.read_byte()
     }
 
     #[inline(always)]
@@ -70,59 +84,69 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         }
     }
 
-    // https://github.com/BillGoldenWater/playground/blob/2ad09e4/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/a9f517d/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
-    fn uleb128<N: NumUnsigned>(&mut self) -> Result<N> {
-        let mut res = N::from_u8(0);
-        let mut shift = 0;
+    pub fn uleb128_inner<T: NumUnsigned>(
+        &mut self,
+        mut cur: T,
+        mut shift: u32,
+        last_byte: u8,
+    ) -> core::result::Result<T, LEB128Error<T>> {
+        if last_byte != 0 {
+            cur.shifted_or_assign(last_byte & 0x7F, shift - 7);
+        }
         let mut byte = self.byte()?;
+        let mut first = last_byte == 0;
 
         loop {
-            res.shifted_or_assign(byte & 0x7F, shift);
-            shift += 7;
+            cur.shifted_or_assign(byte & 0x7F, shift);
 
             if byte & 0x80 == 0 {
+                if byte == 0 && !first {
+                    return Err(LEB128Error::TrailingEmptyBytes);
+                }
+
                 break;
             }
 
-            if shift >= N::BITS {
-                return Err(Error::LEB128TooLong);
+            shift += 7;
+            if shift >= T::BITS {
+                return Err(LEB128Error::TooLong { cur, shift, byte });
             }
 
             byte = self.byte()?;
+            first = false;
         }
 
-        Ok(res)
+        if shift > T::BITS - 7 {
+            // extra bits mask
+            let mask = !((1 << (T::BITS - shift)) - 1);
+            if mask & byte != 0 {
+                return Err(LEB128Error::TooLong { cur, shift, byte });
+            }
+        }
+
+        Ok(cur)
     }
 
-    fn sleb128<N: NumSigned>(&mut self) -> Result<N> {
-        let mut res = N::UnsignedVariant::from_u8(0);
-        let mut shift = 0;
-        let mut byte = self.byte()?;
+    fn uleb128<N: NumUnsigned>(&mut self) -> Result<N> {
+        let res = self.uleb128_inner::<N>(N::from_u8(0), 0, 0);
+        match res {
+            Ok(n) => Ok(n),
+            Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
+            Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+            Err(LEB128Error::TooLong { cur, shift, byte }) => {
+                let res2 = self.uleb128_inner::<u128>(cur.to_u128(), shift, byte);
 
-        loop {
-            res.shifted_or_assign(byte & 0x7F, shift);
-            shift += 7;
-
-            if byte & 0x80 == 0 {
-                break;
+                match res2 {
+                    Ok(n2) => Err(Error::LEB128LongerThanTargetType(n2)),
+                    Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
+                    Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+                    Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
+                }
             }
-
-            if shift >= N::UnsignedVariant::BITS {
-                return Err(Error::LEB128TooLong);
-            }
-
-            byte = self.byte()?;
         }
-
-        let mut res = N::from_unsigned(res);
-
-        if shift < N::UnsignedVariant::BITS && byte & 0x40 != 0 {
-            res.one_fill_left(shift);
-        }
-
-        Ok(res)
     }
 
     fn val(&mut self) -> Result<Value<B>> {

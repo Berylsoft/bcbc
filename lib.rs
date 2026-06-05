@@ -168,8 +168,10 @@ error_enum! {
         Tag(u8),
         TypeTag(u8),
         TypeIdTag(u8),
-        LEB128TooLong,
         U8ToBool(u8),
+        LEB128LongerThan128,
+        LEB128LongerThanTargetType(u128),
+        LEB128TrailingEmptyBytes,
         MaxLen(MaxLenType, u128),
     } convert {
         Read => ReadError,
