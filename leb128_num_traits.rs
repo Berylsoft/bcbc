@@ -64,6 +64,7 @@ macro_rules! impl_num {
                 *self |= (rhs as $ty) << shift;
             }
 
+            #[inline]
             fn to_u128(&self) -> u128 {
                 *self as u128
             }
@@ -96,4 +97,5 @@ impl_num!(u64, i64);
 impl_num!(u32, i32);
 impl_num!(u16, i16);
 impl_num!(u8, i8);
+// assert!(size_of::<usize>() <= size_of::<u128>())
 impl_num!(usize, isize);

@@ -140,7 +140,82 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 let res2 = self.uleb128_inner::<u128>(cur.to_u128(), shift, byte);
 
                 match res2 {
-                    Ok(n2) => Err(Error::LEB128LongerThanTargetType(n2)),
+                    Ok(n) => Err(Error::ULEB128LongerThanTargetType(n)),
+                    Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
+                    Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+                    Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
+                }
+            }
+        }
+    }
+
+    pub fn sleb128_inner<T: NumSigned>(
+        &mut self,
+        mut cur: T::UnsignedVariant,
+        mut shift: u32,
+        mut last_byte: u8,
+    ) -> core::result::Result<T, LEB128Error<T::UnsignedVariant>> {
+        if last_byte != 0 {
+            cur.shifted_or_assign(last_byte & 0x7F, shift - 7);
+        }
+        let bits = T::UnsignedVariant::BITS;
+        let mut byte = self.byte()?;
+
+        loop {
+            cur.shifted_or_assign(byte & 0x7F, shift);
+
+            if byte & 0x80 == 0 {
+                let pos = byte == 0 && last_byte & 0x40 == 0;
+                let neg = byte == 0x7F && last_byte & 0x40 != 0;
+                if (pos || neg) && last_byte != 0 {
+                    return Err(LEB128Error::TrailingEmptyBytes);
+                }
+                break;
+            }
+
+            shift += 7;
+            if shift >= bits {
+                return Err(LEB128Error::TooLong { cur, shift, byte });
+            }
+
+            last_byte = byte;
+            byte = self.byte()?;
+        }
+
+        let mut res = T::from_unsigned(cur);
+
+        if shift < bits - 7 && byte & 0x40 != 0 {
+            res.one_fill_left(shift + 7);
+        }
+
+        if shift > bits - 7 {
+            // extra bits mask
+            let mask = !((1 << (bits - shift - 1)) - 1);
+            if byte & 0x40 != 0 {
+                if shift > bits - 7 && !(mask & byte | 0x80 | !mask) != 0 {
+                    return Err(LEB128Error::TooLong { cur, shift, byte });
+                }
+            } else {
+                if shift > bits - 7 && mask & byte != 0 {
+                    return Err(LEB128Error::TooLong { cur, shift, byte });
+                }
+            }
+        }
+
+        Ok(res)
+    }
+
+    fn sleb128<N: NumSigned>(&mut self) -> Result<N> {
+        let res = self.sleb128_inner::<N>(N::UnsignedVariant::from_u8(0), 0, 0);
+        match res {
+            Ok(n) => Ok(n),
+            Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
+            Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+            Err(LEB128Error::TooLong { cur, shift, byte }) => {
+                let res2 = self.sleb128_inner::<i128>(cur.to_u128(), shift, byte);
+
+                match res2 {
+                    Ok(n) => Err(Error::SLEB128LongerThanTargetType(n)),
                     Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
                     Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
                     Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
