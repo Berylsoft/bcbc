@@ -134,6 +134,27 @@ pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     TypeId(TypeId),
 }
 
+pub struct MaxLens {
+    pub uints: u128,
+    pub bytes: u128,
+    pub string: u128,
+    pub tuple: u128,
+    pub list: u128,
+    pub generics: u128,
+    pub enum_variants: u128,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MaxLenType {
+    Uints,
+    Bytes,
+    String,
+    Tuple,
+    List,
+    Generics,
+    EnumVariants,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FullError<B> {
     pub err: Error,
@@ -144,13 +165,12 @@ pub struct FullError<B> {
 error_enum! {
     #[derive(Clone, Debug, PartialEq, Eq)]
     pub enum Error {
-        // TODO temp solution
-        TooLongLen(usize),
         Tag(u8),
         TypeTag(u8),
         TypeIdTag(u8),
         LEB128TooLong,
         U8ToBool(u8),
+        MaxLen(MaxLenType, u128),
     } convert {
         Read => ReadError,
         Fatal => Fatal,

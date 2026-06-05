@@ -2,14 +2,15 @@ use super::{*, leb128_num_traits::*};
 
 struct Reader<I> {
     inner: byte_storage::Reader<I>,
+    max_lens: MaxLens,
 }
 
 impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
     // begin wrapper impls
 
     #[inline(always)]
-    pub fn new(bytes: B) -> Self {
-        Self { inner: byte_storage::Reader::new(bytes) }
+    pub fn new(bytes: B, max_lens: MaxLens) -> Self {
+        Self { inner: byte_storage::Reader::new(bytes), max_lens }
     }
 
     #[inline(always)]
@@ -38,8 +39,8 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
     }
 
     #[inline(always)]
-    pub fn bytes(&mut self, sz: usize) -> Result<B> {
-        Ok(self.inner.bytes(sz)?)
+    pub fn bytes(&mut self, len: usize) -> Result<B> {
+        Ok(self.inner.bytes(len)?)
     }
 
     #[inline(always)]
@@ -129,16 +130,17 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
     }
 }
 
+// TODO default max lens
 impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
-    pub fn decode<I: Input<Storage = B>>(buf: B) -> FullResult<Value<B>, B> {
-        let mut reader = Reader::<I>::new(buf);
+    pub fn decode<I: Input<Storage = B>>(buf: B, max_lens: MaxLens) -> FullResult<Value<B>, B> {
+        let mut reader = Reader::<I>::new(buf, max_lens);
         let val = reader.val();
         reader.finish_with(val)
     }
 
     // cannot return FullResult
-    pub fn decode_first_value<I: Input<Storage = B>>(buf: B) -> (Result<Value<B>>, B) {
-        let mut reader = Reader::<I>::new(buf);
+    pub fn decode_first_value<I: Input<Storage = B>>(buf: B, max_lens: MaxLens) -> (Result<Value<B>>, B) {
+        let mut reader = Reader::<I>::new(buf, max_lens);
         let res = reader.val();
         (res, reader.into_rest().leak())
     }
