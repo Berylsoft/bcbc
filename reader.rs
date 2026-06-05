@@ -1,16 +1,14 @@
 use super::{*, leb128_num_traits::*};
 
-// TODO(error_enum): generic support
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LEB128Error<T: NumUnsigned> {
     TooLong { cur: T, shift: u32, byte: u8 },
-    TrailingEmptyBytes,
-    Read(ReadError),
+    Others(Error),
 }
 
-impl<T: NumUnsigned> From<ReadError> for LEB128Error<T> {
-    fn from(err: ReadError) -> LEB128Error<T> {
-        LEB128Error::Read(err)
+impl<T: NumUnsigned> From<Error> for LEB128Error<T> {
+    fn from(err: Error) -> LEB128Error<T> {
+        LEB128Error::Others(err)
     }
 }
 
@@ -28,8 +26,8 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
     }
 
     #[inline(always)]
-    pub fn byte(&mut self) -> core::result::Result<u8, ReadError> {
-        self.inner.read_byte()
+    pub fn byte(&mut self) -> Result<u8> {
+        Ok(self.inner.read_byte()?)
     }
 
     #[inline(always)]
@@ -104,7 +102,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
 
             if byte & 0x80 == 0 {
                 if byte == 0 && !first {
-                    return Err(LEB128Error::TrailingEmptyBytes);
+                    return Err(Error::LEB128TrailingEmptyBytes.into());
                 }
 
                 break;
@@ -134,15 +132,13 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         let res = self.uleb128_inner::<N>(N::from_u8(0), 0, 0);
         match res {
             Ok(n) => Ok(n),
-            Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
-            Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+            Err(LEB128Error::Others(err)) => Err(err),
             Err(LEB128Error::TooLong { cur, shift, byte }) => {
                 let res2 = self.uleb128_inner::<u128>(cur.to_u128(), shift, byte);
 
                 match res2 {
                     Ok(n) => Err(Error::ULEB128LongerThanTargetType(n, core::any::type_name::<N>())),
-                    Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
-                    Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+                    Err(LEB128Error::Others(err)) => Err(err),
                     Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
                 }
             }
@@ -168,7 +164,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 let pos = byte == 0 && last_byte & 0x40 == 0;
                 let neg = byte == 0x7F && last_byte & 0x40 != 0;
                 if (pos || neg) && last_byte != 0 {
-                    return Err(LEB128Error::TrailingEmptyBytes);
+                    return Err(Error::LEB128TrailingEmptyBytes.into());
                 }
                 break;
             }
@@ -209,15 +205,13 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         let res = self.sleb128_inner::<N>(N::UnsignedVariant::from_u8(0), 0, 0);
         match res {
             Ok(n) => Ok(n),
-            Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
-            Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+            Err(LEB128Error::Others(err)) => Err(err),
             Err(LEB128Error::TooLong { cur, shift, byte }) => {
                 let res2 = self.sleb128_inner::<i128>(cur.to_u128(), shift, byte);
 
                 match res2 {
                     Ok(n) => Err(Error::SLEB128LongerThanTargetType(n, core::any::type_name::<N>())),
-                    Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
-                    Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
+                    Err(LEB128Error::Others(err)) => Err(err),
                     Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
                 }
             }
