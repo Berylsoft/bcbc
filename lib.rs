@@ -170,8 +170,8 @@ error_enum! {
         TypeIdTag(u8),
         U8ToBool(u8),
         LEB128LongerThan128,
-        ULEB128LongerThanTargetType(u128),
-        SLEB128LongerThanTargetType(i128),
+        ULEB128LongerThanTargetType(u128, &'static str),
+        SLEB128LongerThanTargetType(i128, &'static str),
         LEB128TrailingEmptyBytes,
         MaxLen(MaxLenType, u128),
     } convert {

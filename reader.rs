@@ -140,7 +140,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 let res2 = self.uleb128_inner::<u128>(cur.to_u128(), shift, byte);
 
                 match res2 {
-                    Ok(n) => Err(Error::ULEB128LongerThanTargetType(n)),
+                    Ok(n) => Err(Error::ULEB128LongerThanTargetType(n, core::any::type_name::<N>())),
                     Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
                     Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
                     Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
@@ -215,7 +215,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                 let res2 = self.sleb128_inner::<i128>(cur.to_u128(), shift, byte);
 
                 match res2 {
-                    Ok(n) => Err(Error::SLEB128LongerThanTargetType(n)),
+                    Ok(n) => Err(Error::SLEB128LongerThanTargetType(n, core::any::type_name::<N>())),
                     Err(LEB128Error::Read(err)) => Err(Error::Read(err)),
                     Err(LEB128Error::TrailingEmptyBytes) => Err(Error::LEB128TrailingEmptyBytes),
                     Err(LEB128Error::TooLong { .. }) => Err(Error::LEB128LongerThan128)
