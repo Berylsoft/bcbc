@@ -1,4 +1,4 @@
-use super::{*, leb128::*};
+use super::{*, byte_storage::Input, leb128::*};
 
 struct Reader<I> {
     inner: byte_storage::Reader<I>,

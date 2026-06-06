@@ -1,5 +1,5 @@
 use hex_literal::hex;
-use crate::*;
+use crate::{*, byte_storage::VecOutput};
 
 macro_rules! expb {
     ($s:literal) => {

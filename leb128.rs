@@ -155,3 +155,5 @@ impl<T: NumUnsigned> Default for LEB128DecodeState<T> {
         }
     }
 }
+
+// endregion

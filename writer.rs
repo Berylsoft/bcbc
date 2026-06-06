@@ -1,4 +1,4 @@
-use super::{*, leb128::*};
+use crate::{*, byte_storage::Output, leb128::*};
 
 // TODO writer error?
 

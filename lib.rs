@@ -8,7 +8,7 @@ use alloc::boxed::Box;
 
 use foundations::{error_enum, num_enum_reverse};
 pub use byte_storage;
-use byte_storage::*;
+use byte_storage::{ByteStorage, ReadError};
 
 type VariantId = u128;
 
