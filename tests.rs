@@ -7,12 +7,12 @@ macro_rules! expb {
     };
 }
 
-#[inline(always)]
+#[inline]
 fn b<B: ?Sized + AsRef<[u8]>>(bytes: &B) -> &[u8] {
     bytes.as_ref()
 }
 
-#[inline(always)]
+#[inline]
 fn s<S: ?Sized + AsRef<str>>(bytes: &S) -> Box<[char]> {
     bytes.as_ref().chars().collect()
 }

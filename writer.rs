@@ -2,7 +2,7 @@ use crate::{*, byte_storage::Output, leb128::*};
 
 // TODO writer error?
 
-struct Writer<O> {
+pub(crate) struct Writer<O> {
     output: O,
 }
 
@@ -17,51 +17,17 @@ impl<O: Output> Writer<O> {
         self.output.leak()
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes<B: AsRef<[u8]> + ByteStorage>(&mut self, bytes: B) {
         self.output.bytes(bytes);
     }
 
-    #[inline(always)]
-    fn byte(&mut self, byte: u8) {
+    #[inline]
+    pub(crate) fn byte(&mut self, byte: u8) {
         self.output.byte(byte);
     }
 
     // end wrapper impls
-
-    // https://github.com/BillGoldenWater/playground/blob/1799908/rust/leb128/src/lib.rs
-    // TODO: byte-storage extension?
-
-    fn uleb128(&mut self, mut n: impl NumUnsigned) {
-        loop {
-            let byte = n.trunc_u8() & 0x7F;
-            n.shr_assign(7);
-
-            if n.all_zero() {
-                self.byte(byte);
-                break;
-            } else {
-                self.byte(byte | 0x80);
-            }
-        }
-    }
-
-    fn sleb128(&mut self, n: impl NumSigned) {
-        let mut n = n.as_unsigned();
-        loop {
-            let byte = n.trunc_u8() & 0x7F;
-            n.sar_assign(7);
-
-            let sign = byte & 0x40;
-            if (n.all_zero() && sign == 0) || (n.all_one() && sign != 0)
-            {
-                self.byte(byte);
-                break;
-            } else {
-                self.byte(byte | 0x80);
-            }
-        }
-    }
 
     fn tag(&mut self, tag: Tag) {
         self.byte(tag as u8);
