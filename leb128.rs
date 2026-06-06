@@ -1,5 +1,7 @@
-// https://github.com/BillGoldenWater/playground/blob/9620c45/rust/leb128/src/lib.rs
+// https://github.com/BillGoldenWater/playground/blob/1799908/rust/leb128/src/lib.rs
 // TODO: byte-storage extension?
+
+// region: num traits
 
 pub trait NumUnsigned: Copy {
     const BITS: u32;
@@ -97,5 +99,59 @@ impl_num!(u64, i64);
 impl_num!(u32, i32);
 impl_num!(u16, i16);
 impl_num!(u8, i8);
-// assert!(size_of::<usize>() <= size_of::<u128>())
+
+const _: () = assert_size_length();
+const fn assert_size_length() {
+    if usize::BITS > 128 || isize::BITS > 128 {
+        panic!("archs that size length larger than 128-bit is not supported currently");
+        // TODO try_into() on that archs
+    }
+}
+
 impl_num!(usize, isize);
+
+// endregion
+
+// region: decode state & error
+
+use crate::Error;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LEB128Error<T: NumUnsigned> {
+    TooLong(LEB128DecodeState<T>),
+    Others(Error),
+}
+
+impl<T: NumUnsigned> From<Error> for LEB128Error<T> {
+    fn from(err: Error) -> LEB128Error<T> {
+        LEB128Error::Others(err)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LEB128DecodeState<T: NumUnsigned> {
+    pub cur: T,
+    pub shift: u32,
+    pub byte: u8,
+}
+
+impl<T: NumUnsigned> LEB128DecodeState<T> {
+    // TODO into_super like orig
+    pub fn into_128(self) -> LEB128DecodeState<u128> {
+        LEB128DecodeState {
+            cur: self.cur.to_u128(),
+            shift: self.shift,
+            byte: self.byte,
+        }
+    }
+}
+
+impl<T: NumUnsigned> Default for LEB128DecodeState<T> {
+    fn default() -> Self {
+        Self {
+            cur: T::from_u8(0),
+            shift: 0,
+            byte: 0,
+        }
+    }
+}

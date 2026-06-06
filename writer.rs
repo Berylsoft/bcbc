@@ -1,4 +1,4 @@
-use super::{*, leb128_num_traits::*};
+use super::{*, leb128::*};
 
 // TODO writer error?
 
@@ -29,7 +29,7 @@ impl<O: Output> Writer<O> {
 
     // end wrapper impls
 
-    // https://github.com/BillGoldenWater/playground/blob/9620c45/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/1799908/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
     fn uleb128(&mut self, mut n: impl NumUnsigned) {

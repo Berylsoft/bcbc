@@ -1,16 +1,4 @@
-use super::{*, leb128_num_traits::*};
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum LEB128Error<T: NumUnsigned> {
-    TooLong { cur: T, shift: u32, byte: u8 },
-    Others(Error),
-}
-
-impl<T: NumUnsigned> From<Error> for LEB128Error<T> {
-    fn from(err: Error) -> LEB128Error<T> {
-        LEB128Error::Others(err)
-    }
-}
+use super::{*, leb128::*};
 
 struct Reader<I> {
     inner: byte_storage::Reader<I>,
@@ -82,15 +70,18 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         }
     }
 
-    // https://github.com/BillGoldenWater/playground/blob/9620c45/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/1799908/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
-    pub fn uleb128_inner<T: NumUnsigned>(
+    fn uleb128_inner<T: NumUnsigned>(
         &mut self,
-        mut cur: T,
-        mut shift: u32,
-        mut byte: u8,
+        state: Option<LEB128DecodeState<T>>,
     ) -> core::result::Result<T, LEB128Error<T>> {
+        let LEB128DecodeState {
+            mut cur,
+            mut shift,
+            mut byte,
+        } = state.unwrap_or_default();
         let mut first = byte == 0;
         if first {
             byte = self.byte()?;
@@ -109,11 +100,11 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
 
             shift += 7;
             if shift >= T::BITS {
-                return Err(LEB128Error::TooLong {
+                return Err(LEB128Error::TooLong(LEB128DecodeState {
                     cur,
                     shift: shift - 7,
                     byte,
-                });
+                }));
             }
 
             byte = self.byte()?;
@@ -124,20 +115,25 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
             // extra bits mask
             let mask = !((1 << (T::BITS - shift)) - 1);
             if mask & byte != 0 {
-                return Err(LEB128Error::TooLong { cur, shift, byte });
+                return Err(LEB128Error::TooLong(LEB128DecodeState {
+                    cur,
+                    shift,
+                    byte,
+                }));
             }
         }
 
         Ok(cur)
     }
 
+
     fn uleb128<N: NumUnsigned>(&mut self) -> Result<N> {
-        let res = self.uleb128_inner::<N>(N::from_u8(0), 0, 0);
+        let res = self.uleb128_inner::<N>(None);
         match res {
             Ok(n) => Ok(n),
             Err(LEB128Error::Others(err)) => Err(err),
-            Err(LEB128Error::TooLong { cur, shift, byte }) => {
-                let res2 = self.uleb128_inner::<u128>(cur.to_u128(), shift, byte);
+            Err(LEB128Error::TooLong(state)) => {
+                let res2 = self.uleb128_inner::<u128>(Some(state.into_128()));
 
                 match res2 {
                     Ok(n) => Err(Error::ULEB128LongerThanTargetType(n, core::any::type_name::<N>())),
@@ -150,11 +146,15 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
 
     pub fn sleb128_inner<T: NumSigned>(
         &mut self,
-        mut cur: T::UnsignedVariant,
-        mut shift: u32,
-        mut byte: u8,
+        state: Option<LEB128DecodeState<T::UnsignedVariant>>,
     ) -> core::result::Result<T, LEB128Error<T::UnsignedVariant>> {
         let bits = T::UnsignedVariant::BITS;
+        let LEB128DecodeState {
+            mut cur,
+            mut shift,
+            mut byte,
+        } = state.unwrap_or_default();
+
         let mut last_byte = 0;
         let mut first = byte == 0;
         if first {
@@ -177,11 +177,11 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
 
             shift += 7;
             if shift >= bits {
-                return Err(LEB128Error::TooLong {
+                return Err(LEB128Error::TooLong(LEB128DecodeState {
                     cur,
                     shift: shift - 7,
                     byte,
-                });
+                }));
             }
 
             last_byte = byte;
@@ -194,11 +194,19 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
             let mask = !((1 << (bits - shift - 1)) - 1);
             if byte & 0x40 != 0 {
                 if shift > bits - 7 && !(mask & byte | 0x80 | !mask) != 0 {
-                    return Err(LEB128Error::TooLong { cur, shift, byte });
+                    return Err(LEB128Error::TooLong(LEB128DecodeState {
+                        cur,
+                        shift,
+                        byte,
+                    }));
                 }
             } else {
                 if shift > bits - 7 && mask & byte != 0 {
-                    return Err(LEB128Error::TooLong { cur, shift, byte });
+                    return Err(LEB128Error::TooLong(LEB128DecodeState {
+                        cur,
+                        shift,
+                        byte,
+                    }));
                 }
             }
         }
@@ -212,12 +220,12 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
     }
 
     fn sleb128<N: NumSigned>(&mut self) -> Result<N> {
-        let res = self.sleb128_inner::<N>(N::UnsignedVariant::from_u8(0), 0, 0);
+        let res = self.sleb128_inner::<N>(None);
         match res {
             Ok(n) => Ok(n),
             Err(LEB128Error::Others(err)) => Err(err),
-            Err(LEB128Error::TooLong { cur, shift, byte }) => {
-                let res2 = self.sleb128_inner::<i128>(cur.to_u128(), shift, byte);
+            Err(LEB128Error::TooLong(state)) => {
+                let res2 = self.sleb128_inner::<i128>(Some(state.into_128()));
 
                 match res2 {
                     Ok(n) => Err(Error::SLEB128LongerThanTargetType(n, core::any::type_name::<N>())),
