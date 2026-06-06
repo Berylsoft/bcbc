@@ -82,20 +82,19 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         }
     }
 
-    // https://github.com/BillGoldenWater/playground/blob/a9f517d/rust/leb128/src/lib.rs
+    // https://github.com/BillGoldenWater/playground/blob/9620c45/rust/leb128/src/lib.rs
     // TODO: byte-storage extension?
 
     pub fn uleb128_inner<T: NumUnsigned>(
         &mut self,
         mut cur: T,
         mut shift: u32,
-        last_byte: u8,
+        mut byte: u8,
     ) -> core::result::Result<T, LEB128Error<T>> {
-        if last_byte != 0 {
-            cur.shifted_or_assign(last_byte & 0x7F, shift - 7);
+        let mut first = byte == 0;
+        if first {
+            byte = self.byte()?;
         }
-        let mut byte = self.byte()?;
-        let mut first = last_byte == 0;
 
         loop {
             cur.shifted_or_assign(byte & 0x7F, shift);
@@ -110,7 +109,11 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
 
             shift += 7;
             if shift >= T::BITS {
-                return Err(LEB128Error::TooLong { cur, shift, byte });
+                return Err(LEB128Error::TooLong {
+                    cur,
+                    shift: shift - 7,
+                    byte,
+                });
             }
 
             byte = self.byte()?;
@@ -149,39 +152,41 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         &mut self,
         mut cur: T::UnsignedVariant,
         mut shift: u32,
-        mut last_byte: u8,
+        mut byte: u8,
     ) -> core::result::Result<T, LEB128Error<T::UnsignedVariant>> {
-        if last_byte != 0 {
-            cur.shifted_or_assign(last_byte & 0x7F, shift - 7);
-        }
         let bits = T::UnsignedVariant::BITS;
-        let mut byte = self.byte()?;
+        let mut last_byte = 0;
+        let mut first = byte == 0;
+        if first {
+            byte = self.byte()?;
+        }
 
         loop {
             cur.shifted_or_assign(byte & 0x7F, shift);
 
             if byte & 0x80 == 0 {
-                let pos = byte == 0 && last_byte & 0x40 == 0;
-                let neg = byte == 0x7F && last_byte & 0x40 != 0;
-                if (pos || neg) && last_byte != 0 {
-                    return Err(Error::LEB128TrailingEmptyBytes.into());
+                if !first {
+                    let pos = byte == 0 && last_byte & 0x40 == 0;
+                    let neg = byte == 0x7F && last_byte & 0x40 != 0;
+                    if pos || neg {
+                        return Err(Error::LEB128TrailingEmptyBytes.into());
+                    }
                 }
                 break;
             }
 
             shift += 7;
             if shift >= bits {
-                return Err(LEB128Error::TooLong { cur, shift, byte });
+                return Err(LEB128Error::TooLong {
+                    cur,
+                    shift: shift - 7,
+                    byte,
+                });
             }
 
             last_byte = byte;
             byte = self.byte()?;
-        }
-
-        let mut res = T::from_unsigned(cur);
-
-        if shift < bits - 7 && byte & 0x40 != 0 {
-            res.one_fill_left(shift + 7);
+            first = false;
         }
 
         if shift > bits - 7 {
@@ -196,6 +201,11 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
                     return Err(LEB128Error::TooLong { cur, shift, byte });
                 }
             }
+        }
+
+        let mut res = T::from_unsigned(cur);
+        if shift < bits - 7 && byte & 0x40 != 0 {
+            res.one_fill_left(shift + 7);
         }
 
         Ok(res)

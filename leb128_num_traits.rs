@@ -1,4 +1,4 @@
-// https://github.com/BillGoldenWater/playground/blob/a9f517d/rust/leb128/src/lib.rs
+// https://github.com/BillGoldenWater/playground/blob/9620c45/rust/leb128/src/lib.rs
 // TODO: byte-storage extension?
 
 pub trait NumUnsigned: Copy {
