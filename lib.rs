@@ -135,13 +135,13 @@ pub enum Value<B: AsRef<[u8]> + ByteStorage> {
 }
 
 pub struct MaxLens {
-    pub uints: u128,
-    pub bytes: u128,
-    pub string: u128,
-    pub tuple: u128,
-    pub list: u128,
-    pub generics: u128,
-    pub enum_variants: u128,
+    pub uints: usize,
+    pub bytes: usize,
+    pub string: usize,
+    pub tuple: usize,
+    pub list: usize,
+    pub generics: usize,
+    pub variants: u128,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -152,7 +152,13 @@ pub enum MaxLenType {
     Tuple,
     List,
     Generics,
-    EnumVariants,
+    Variants,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MaxLenExceedValue {
+    Size(usize),
+    Id(u128),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -173,20 +179,20 @@ error_enum! {
         ULEB128LongerThanTargetType(u128, &'static str),
         SLEB128LongerThanTargetType(i128, &'static str),
         LEB128TrailingEmptyBytes,
-        MaxLen(MaxLenType, u128),
+        MaxLen(MaxLenType, MaxLenExceedValue),
+        U32ToChar(u32),
+        FixedTupleLen(u8),
+        // TODO distinguish inner type & user type
+        ExpectedTypeMismatch(Tag),
+        EmptyListInNotEmptyMark,
+        ImplicitTypeOnTop,
     } convert {
         Read => ReadError,
-        Fatal => Fatal,
     }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Fatal {
 }
 
 type Result<T> = core::result::Result<T, Error>;
 type FullResult<T, B> = core::result::Result<T, FullError<B>>;
-type FatalResult<T> = core::result::Result<T, Fatal>;
 
 pub(crate) mod leb128;
 pub mod casting;

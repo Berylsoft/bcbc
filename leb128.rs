@@ -104,7 +104,7 @@ const _: () = assert_size_length();
 const fn assert_size_length() {
     if usize::BITS > 128 || isize::BITS > 128 {
         panic!("archs that size length larger than 128-bit is not supported currently");
-        // TODO try_into() on that archs
+        // TODO needs uN supported in Rust and try_into() on that archs
     }
 }
 

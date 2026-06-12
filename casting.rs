@@ -31,7 +31,7 @@ impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
         }
     }
 
-    fn as_type(&self) -> Type {
+    pub fn as_type(&self) -> Type {
         macro_rules! as_type_impl {
             (
                 direct {$($direct_name:ident)*}
