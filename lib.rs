@@ -1,7 +1,7 @@
 #![deny(unused_results)]
 #![forbid(unsafe_code)]
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 extern crate alloc;
 use alloc::boxed::Box;

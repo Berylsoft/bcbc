@@ -23,10 +23,6 @@ macro_rules! seq {
     };
 }
 
-macro_rules! println {
-    ($($tt:tt)*) => {};
-}
-
 const MAX_LENS: MaxLens = MaxLens {
     uints: u32::MAX as usize,
     bytes: u32::MAX as usize,
@@ -99,7 +95,6 @@ fn cases() {
 
     const F64_BYTES: &[u8] = 50.0_f64.to_le_bytes().as_slice();
 
-    println!("{:?}", F64_BYTES);
     case(
         Value::Tuple(seq![
             Value::Tuple(seq![]),
@@ -114,12 +109,12 @@ fn cases() {
             Value::Alias(TypeId::Anonymous/* third-party */, seq![], Box::new(Value::Bytes(b(b"\xff")))),
             Value::Enum(TypeId::Std(0x5f50), 11),
             Value::Choice(TypeId::Std(0x5f49), seq![], 5, Box::new(Value::Int(5))),
-            Value::Choice(TypeId::Std(0xfe00aa), seq![], 163, Box::new(Value::Uint(12))),
+            Value::Choice(TypeId::Std(0xfe00aa), seq![Type::Alias(TypeId::Std(0xfe00bb), seq![Type::Uint])], 163, Box::new(Value::Uint(12))),
             Value::Type(Type::List(Box::new(Type::List(Box::new(Type::Struct(TypeId::Anonymous, seq![])))))),
-            Value::TypeId(TypeId::Std(0xfedcba98765432)),
+            Value::TypeId(TypeId::Std(0xfedcba98765432/* third-party */)),
             Value::Option(
-                Type::Tuple(seq![Type::Int, Type::Tuple(seq![]), Type::Bool]),
-                Some(Box::new(Value::Tuple(seq![Value::Int(9), Value::Tuple(seq![]), Value::Bool(true)])))
+                Type::Tuple(seq![Type::Int, Type::Tuple(seq![Type::Bytes]), Type::Bool]),
+                Some(Box::new(Value::Tuple(seq![Value::Int(9), Value::Tuple(seq![Value::Bytes(b(b"\xab"))]), Value::Bool(true)])))
             ),
         ]),
         expb!("
@@ -166,7 +161,17 @@ fn cases() {
                 44 02
                     55 79
                     55 aa81f807
-                47 00
+                47 01
+                    54 02
+                        55 61
+                        50 02
+                            44 02
+                                55 79
+                                55 bb81f807
+                            47 01
+                                54 02
+                                    55 75
+                                    50 00
                 55 a301
                 55 0c
             54 02
@@ -187,7 +192,8 @@ fn cases() {
                 46 01
                 50 03
                     49 09
-                    50 00
+                    50 01
+                        42 01 ab
                     46 01
         ")
     );
