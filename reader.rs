@@ -85,7 +85,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         if tag == exp_tag {
             Ok(())
         } else {
-            Err(Error::ExpectedTypeMismatch(tag))
+            Err(Error::ExpectedTypeMismatch { tag, exp_tag })
         }
     }
 
@@ -94,7 +94,7 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
         if len == exp_len {
             Ok(())
         } else {
-            Err(Error::FixedTupleLen(len))
+            Err(Error::FixedTupleLen { len, exp_len })
         }
     }
     
@@ -642,9 +642,11 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
             },
             Tag::Type => Value::Type(self.c_type()?),
             Tag::TypeId => Value::TypeId(self.c_type_id()?),
-            Tag::ListItems
-            | Tag::Generics => {
-                return Err(Error::ImplicitTypeOnTop);
+            tag @ (
+                Tag::ListItems
+                | Tag::Generics
+            )  => {
+                return Err(Error::ImplicitTypeOnTop(tag));
             }
         })
     }

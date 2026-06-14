@@ -194,13 +194,11 @@ error_enum! {
         LEB128TrailingEmptyBytes,
         MaxLen(MaxLenType, MaxLenExceedValue),
         U32ToChar(u32),
-        // TODO exp value
-        FixedTupleLen(u8),
-        // TODO exp value
+        FixedTupleLen { len: u8, exp_len: u8 },
         // TODO distinguish inner type & user type
-        ExpectedTypeMismatch(Tag),
+        ExpectedTypeMismatch { tag: Tag, exp_tag: Tag },
         EmptyListInNotEmptyMark,
-        ImplicitTypeOnTop,
+        ImplicitTypeOnTop(Tag),
     } convert {
         Read => ReadError,
     }

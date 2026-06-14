@@ -227,36 +227,40 @@ fn cases() {
         7,
     );
 
-    macro_rules! multi_case_same_error {
-        ([$($exp:expr,)*], $err:expr, $pos:expr,) => {
-            $(err_case(expb!($exp), $err, $pos);)*
+    macro_rules! multi_fixed_tuple_len {
+        ([$($exp:expr => $exp_len:expr,)*], $len:expr, $pos:expr,) => {
+            $(err_case(
+                expb!($exp),
+                Error::FixedTupleLen { len: $len, exp_len: $exp_len },
+                $pos,
+            );)*
         };
     }
 
-    multi_case_same_error! {
+    multi_fixed_tuple_len! {
         [
-            "4c 0f",
-            "4f 0f",
-            "41 0f",
-            "45 0f",
-            "43 0f",
-            "52 0f",
-            "54 0f",
-            "44 0f",
+            "4c 0f" => 2,
+            "4f 0f" => 2,
+            "41 0f" => 3,
+            "45 0f" => 2,
+            "43 0f" => 4,
+            "52 0f" => 3,
+            "54 0f" => 2,
+            "44 0f" => 2,
         ],
-        Error::FixedTupleLen(0x0f),
+        0x0f,
         2,
     };
 
     err_case(
         expb!("4c 00"),
-        Error::FixedTupleLen(0x00),
+        Error::FixedTupleLen { len: 0x00, exp_len: 2 },
         2,
     );
 
     err_case(
         expb!("4c ff01"),
-        Error::FixedTupleLen(0xff),
+        Error::FixedTupleLen { len: 0xff, exp_len: 2 },
         3,
     );
 
@@ -269,10 +273,11 @@ fn cases() {
     );
 
     // for value API we can only detect inner type
+    // TODO how to test low level API?
 
     err_case(
         expb!("4c 02  46 01  50"),
-        Error::ExpectedTypeMismatch(Tag::Tuple),
+        Error::ExpectedTypeMismatch { tag: Tag::Tuple, exp_tag: Tag::ListItems },
         5,
     );
 
@@ -284,7 +289,7 @@ fn cases() {
                 50 00
             50
         "),
-        Error::ExpectedTypeMismatch(Tag::Tuple),
+        Error::ExpectedTypeMismatch { tag: Tag::Tuple, exp_tag: Tag::Generics },
         9,
     );
 
@@ -294,12 +299,15 @@ fn cases() {
         6,
     );
 
-    multi_case_same_error! {
-        [
-            "4d",
-            "47",
-        ],
-        Error::ImplicitTypeOnTop,
+    err_case(
+        expb!("4d"),
+        Error::ImplicitTypeOnTop(Tag::ListItems),
         1,
-    };
+    );
+
+    err_case(
+        expb!("47"),
+        Error::ImplicitTypeOnTop(Tag::Generics),
+        1,
+    );
 }
