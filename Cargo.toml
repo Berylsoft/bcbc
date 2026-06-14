@@ -22,6 +22,7 @@ byte-storage = { git = "https://github.com/Berylsoft/byte-storage", features = [
 [dev-dependencies]
 hex = "*"
 hex-literal = "*"
+arbitrary = { version = "1", features = ["derive"] }
 
 [features]
 bytes = ["byte-storage/bytes"]

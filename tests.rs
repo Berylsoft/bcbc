@@ -187,4 +187,119 @@ fn cases() {
                     46 01
         ")
     );
+
+    fn err_case(exp: &'static [u8], err: Error, pos: usize) {
+        let err2 = Value::decode::<SliceInput>(exp).unwrap_err();
+        assert_eq!(err2, FullError { err, buf: exp, pos });
+    }
+
+    err_case(
+        expb!("ff"),
+        Error::Tag(0xff),
+        1,
+    );
+
+    err_case(
+        expb!("54 02  55 31"),
+        Error::TypeTag(0x31),
+        4,
+    );
+
+    err_case(
+        expb!("44 02  55 31"),
+        Error::TypeIdTag(0x31),
+        4,
+    );
+
+    err_case(
+        expb!("46 02"),
+        Error::U8ToBool(0x02),
+        2,
+    );
+
+    // TODO leb128 tests
+
+    // TODO all max_len tests
+
+    err_case(
+        expb!("53 01 ffffffff0f"),
+        Error::U32ToChar(0xffffffff),
+        7,
+    );
+
+    macro_rules! multi_case_same_error {
+        ([$($exp:expr,)*], $err:expr, $pos:expr,) => {
+            $(err_case(expb!($exp), $err, $pos);)*
+        };
+    }
+
+    multi_case_same_error! {
+        [
+            "4c 0f",
+            "4f 0f",
+            "41 0f",
+            "45 0f",
+            "43 0f",
+            "52 0f",
+            "54 0f",
+            "44 0f",
+        ],
+        Error::FixedTupleLen(0x0f),
+        2,
+    };
+
+    err_case(
+        expb!("4c 00"),
+        Error::FixedTupleLen(0x00),
+        2,
+    );
+
+    err_case(
+        expb!("4c ff01"),
+        Error::FixedTupleLen(0xff),
+        3,
+    );
+
+    // other cases that appear to be leb128 error?
+
+    err_case(
+        expb!("4c 8002"),
+        Error::ULEB128LongerThanTargetType(0x0100, "u8"),
+        3,
+    );
+
+    // for value API we can only detect inner type
+
+    err_case(
+        expb!("4c 02  46 01  50"),
+        Error::ExpectedTypeMismatch(Tag::Tuple),
+        5,
+    );
+
+    err_case(
+        expb!("
+        41 03
+            44 02
+                55 78
+                50 00
+            50
+        "),
+        Error::ExpectedTypeMismatch(Tag::Tuple),
+        9,
+    );
+
+    err_case(
+        expb!("4c 02  46 01  4d 00"),
+        Error::EmptyListInNotEmptyMark,
+        6,
+    );
+
+    multi_case_same_error! {
+        [
+            "4d",
+            "47",
+        ],
+        Error::ImplicitTypeOnTop,
+        1,
+    };
 }

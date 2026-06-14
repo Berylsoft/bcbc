@@ -77,6 +77,7 @@ num_enum_reverse! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 pub enum Type {
     Unknown,
 
@@ -102,6 +103,7 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 pub enum TypeId {
     Anonymous,
     Std(u128),
@@ -112,6 +114,7 @@ pub enum TypeId {
 // TODO variant structs?
 // TODO no value & matching r&w api
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 pub enum Value<B: AsRef<[u8]> + ByteStorage> {
     Uint(u128),
     Int(i128),
@@ -191,7 +194,9 @@ error_enum! {
         LEB128TrailingEmptyBytes,
         MaxLen(MaxLenType, MaxLenExceedValue),
         U32ToChar(u32),
+        // TODO exp value
         FixedTupleLen(u8),
+        // TODO exp value
         // TODO distinguish inner type & user type
         ExpectedTypeMismatch(Tag),
         EmptyListInNotEmptyMark,
