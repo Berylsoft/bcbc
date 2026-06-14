@@ -23,16 +23,6 @@ macro_rules! seq {
     };
 }
 
-const MAX_LENS: MaxLens = MaxLens {
-    uints: u32::MAX as usize,
-    bytes: u32::MAX as usize,
-    string: u32::MAX as usize,
-    tuple: u32::MAX as usize,
-    list: u32::MAX as usize,
-    generics: u32::MAX as usize,
-    variants: u32::MAX as u128,
-};
-
 #[test]
 fn cases() {
     fn case(v: Value<&'static [u8]>, exp: &'static [u8]) {
@@ -43,7 +33,7 @@ fn cases() {
         println!("len={}", buf.len());
         println!("{}", hex::encode(&buf));
         assert_eq!(&buf, exp);
-        let v2 = Value::decode::<SliceInput>(&buf, MAX_LENS).unwrap();
+        let v2 = Value::decode::<SliceInput>(&buf).unwrap();
         assert_eq!(v, v2);
     }
 

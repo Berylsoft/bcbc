@@ -144,6 +144,16 @@ pub struct MaxLens {
     pub variants: u128,
 }
 
+pub const DEFAULT_MAX_LENS: MaxLens = MaxLens {
+    uints: u32::MAX as usize,
+    bytes: u32::MAX as usize,
+    string: u32::MAX as usize,
+    tuple: u32::MAX as usize,
+    list: u32::MAX as usize,
+    generics: u32::MAX as usize,
+    variants: u32::MAX as u128,
+};
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MaxLenType {
     Uints,

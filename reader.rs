@@ -652,16 +652,25 @@ impl<B: AsRef<[u8]> + ByteStorage, I: Input<Storage = B>> Reader<I> {
 
 // TODO default max lens
 impl<B: AsRef<[u8]> + ByteStorage> Value<B> {
-    pub fn decode<I: Input<Storage = B>>(buf: B, max_lens: MaxLens) -> FullResult<Value<B>, B> {
+    pub fn decode_with_max_lens<I: Input<Storage = B>>(buf: B, max_lens: MaxLens) -> FullResult<Value<B>, B> {
         let mut reader = Reader::<I>::new(buf, max_lens);
         let val = reader.value();
         reader.finish_with(val)
     }
 
+    pub fn decode<I: Input<Storage = B>>(buf: B) -> FullResult<Value<B>, B> {
+        Self::decode_with_max_lens::<I>(buf, DEFAULT_MAX_LENS)
+    }
+
     // cannot return FullResult
-    pub fn decode_first_value<I: Input<Storage = B>>(buf: B, max_lens: MaxLens) -> (Result<Value<B>>, B) {
+    pub fn decode_first_value_with_max_lens<I: Input<Storage = B>>(buf: B, max_lens: MaxLens) -> (Result<Value<B>>, B) {
         let mut reader = Reader::<I>::new(buf, max_lens);
         let res = reader.value();
         (res, reader.into_rest().leak())
+    }
+
+    // cannot return FullResult
+    pub fn decode_first_value<I: Input<Storage = B>>(buf: B) -> (Result<Value<B>>, B) {
+        Self::decode_first_value_with_max_lens::<I>(buf, DEFAULT_MAX_LENS)
     }
 }
