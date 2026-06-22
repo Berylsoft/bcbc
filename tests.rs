@@ -91,6 +91,7 @@ fn cases() {
             Value::Bool(false),
             Value::Int(-7777777),
             Value::Uint(1027),
+            Value::Uints(seq![11, 12, 1314, 1516171819, 20]),
             Value::Alias(TypeId::Std(10), seq![], Box::new(Value::Bytes(F64_BYTES))),
             Value::String(s("Berylsoft")),
             Value::Bytes(b(b"(\x00)")),
@@ -108,11 +109,12 @@ fn cases() {
             ),
         ]),
         expb!("
-        50 10
+        50 11
             50 00
             46 00
             49 8fa4a57c
             55 8308
+            4e 05 0b 0c a20a abe4fbd205 14
             41 03
                 44 02
                     55 79
