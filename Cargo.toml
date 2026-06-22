@@ -18,6 +18,8 @@ foundations = { git = "https://github.com/Berylsoft/foundations", features = [
     # "byterepr-macros",
 ] }
 byte-storage = { git = "https://github.com/Berylsoft/byte-storage", features = ["alloc"] }
+itoa = { version = "1", optional = true }
+hex = { version = "0.4", optional = true }
 
 [dev-dependencies]
 hex = "*"
@@ -26,3 +28,4 @@ arbitrary = { version = "1", features = ["derive"] }
 
 [features]
 bytes = ["byte-storage/bytes"]
+text-writer = ["itoa", "hex"]

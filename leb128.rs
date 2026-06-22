@@ -3,7 +3,13 @@
 
 // region: num traits
 
-pub trait NumUnsigned: Copy {
+#[cfg(not(feature = "text-writer"))]
+pub trait NumBase: Copy {}
+
+#[cfg(feature = "text-writer")]
+pub trait NumBase: Copy + itoa::Integer {}
+
+pub trait NumUnsigned: NumBase {
     const BITS: u32;
 
     fn from_u8(value: u8) -> Self;
@@ -18,7 +24,7 @@ pub trait NumUnsigned: Copy {
     fn to_u128(&self) -> u128;
 }
 
-pub trait NumSigned: Copy {
+pub trait NumSigned: NumBase {
     type UnsignedVariant: NumUnsigned;
 
     fn as_unsigned(&self) -> Self::UnsignedVariant;
@@ -28,6 +34,8 @@ pub trait NumSigned: Copy {
 
 macro_rules! impl_num {
     ($ty:ty, $signed_ty:ty) => {
+        impl NumBase for $ty {}
+
         impl NumUnsigned for $ty {
             const BITS: u32 = <$ty>::BITS;
 
@@ -71,6 +79,8 @@ macro_rules! impl_num {
                 *self as u128
             }
         }
+
+        impl NumBase for $signed_ty {}
 
         impl NumSigned for $signed_ty {
             type UnsignedVariant = $ty;

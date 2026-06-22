@@ -3,6 +3,8 @@
 
 #![cfg_attr(not(test), no_std)]
 
+// TODO no_panic (crate)
+
 extern crate alloc;
 use alloc::boxed::Box;
 
@@ -40,6 +42,8 @@ num_enum_reverse! {
         b'G' = Generics,
     } as u8 else Error::Tag
 }
+
+// TODO type tag & type id tag as single byte value?
 
 num_enum_reverse! {
     pub enum TypeTag {
@@ -212,6 +216,9 @@ pub mod casting;
 
 pub mod reader;
 pub mod writer;
+
+#[cfg(feature = "text-writer")]
+pub mod text_writer;
 
 #[cfg(test)]
 mod tests;
