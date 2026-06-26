@@ -70,14 +70,13 @@ impl<O: Output> Writer<O> {
         }
     }
 
-    fn h_tuple_need_values(&mut self, len: impl NumUnsigned) {
-        self.tag(Tag::Tuple);
-        self.uleb128(len);
-    }
-
     fn h_tuple_like_need_values(&mut self, tag: Tag, len: impl NumUnsigned) {
         self.tag(tag);
         self.uleb128(len);
+    }
+
+    fn h_tuple_need_values(&mut self, len: impl NumUnsigned) {
+        self.h_tuple_like_need_values(Tag::Tuple, len);
     }
 
     fn v_type_id(&mut self, type_id: &TypeId) {

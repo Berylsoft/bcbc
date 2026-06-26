@@ -23,6 +23,59 @@ macro_rules! seq {
     };
 }
 
+fn case_1() -> Value<&'static [u8]> {
+    Value::List(
+        Type::Tuple(seq![
+            Type::Uint,
+            Type::List(Box::new(Type::String)),
+        ]),
+        seq![
+            Value::Tuple(seq![
+                Value::Uint(123),
+                Value::List(Type::String, seq![
+                    Value::String(s("hello")),
+                    Value::String(s("goodbye")),
+                ]),
+            ]),
+            Value::Tuple(seq![
+                Value::Uint(999999),
+                Value::List(Type::String, seq![
+                    Value::String(s("how are you")),
+                    Value::String(s("fine")),
+                    Value::String(s("thanks")),
+                ]),
+            ]),
+        ],
+    )
+}
+
+fn case_2() -> Value<&'static [u8]> {
+    const F64_BYTES: &[u8] = 50.0_f64.to_le_bytes().as_slice();
+
+    Value::Tuple(seq![
+        Value::Tuple(seq![]),
+        Value::Bool(false),
+        Value::Int(-7777777),
+        Value::Uint(1027),
+        Value::Uints(seq![11, 12, 1314, 1516171819, 20]),
+        Value::Alias(TypeId::Std(10), seq![], Box::new(Value::Bytes(F64_BYTES))),
+        Value::String(s("Berylsoft")),
+        Value::Bytes(b(b"(\x00)")),
+        Value::Option(Type::String, None),
+        Value::Option(Type::Bool, Some(Box::new(Value::Bool(true)))),
+        Value::Alias(TypeId::Anonymous/* third-party */, seq![], Box::new(Value::Bytes(b(b"\xff")))),
+        Value::Enum(TypeId::Std(0x5f50), 11),
+        Value::Choice(TypeId::Std(0x5f49), seq![], 5, Box::new(Value::Int(5))),
+        Value::Choice(TypeId::Std(0xfe00aa), seq![Type::Alias(TypeId::Std(0xfe00bb), seq![Type::Uint])], 163, Box::new(Value::Uint(12))),
+        Value::Type(Type::List(Box::new(Type::List(Box::new(Type::Struct(TypeId::Anonymous, seq![])))))),
+        Value::TypeId(TypeId::Std(0xfedcba98765432/* third-party */)),
+        Value::Option(
+            Type::Tuple(seq![Type::Int, Type::Tuple(seq![Type::Bytes]), Type::Bool]),
+            Some(Box::new(Value::Tuple(seq![Value::Int(9), Value::Tuple(seq![Value::Bytes(b(b"\xab"))]), Value::Bool(true)])))
+        ),
+    ])
+}
+
 #[test]
 fn cases() {
     fn case(v: Value<&'static [u8]>, exp: &'static [u8]) {
@@ -37,31 +90,7 @@ fn cases() {
         assert_eq!(v, v2);
     }
 
-    case(
-        Value::List(
-            Type::Tuple(seq![
-                Type::Uint,
-                Type::List(Box::new(Type::String)),
-            ]),
-            seq![
-                Value::Tuple(seq![
-                    Value::Uint(123),
-                    Value::List(Type::String, seq![
-                        Value::String(s("hello")),
-                        Value::String(s("goodbye")),
-                    ]),
-                ]),
-                Value::Tuple(seq![
-                    Value::Uint(999999),
-                    Value::List(Type::String, seq![
-                        Value::String(s("how are you")),
-                        Value::String(s("fine")),
-                        Value::String(s("thanks")),
-                    ]),
-                ]),
-            ],
-        ),
-        expb!("
+    case(case_1(), expb!("
         4c 02
             46 01
             4d 02
@@ -80,35 +109,9 @@ fn cases() {
                             53 0b 686f772061726520796f75
                             53 04 66696e65
                             53 06 7468616e6b73
-        "),
-    );
+    "));
 
-    const F64_BYTES: &[u8] = 50.0_f64.to_le_bytes().as_slice();
-
-    case(
-        Value::Tuple(seq![
-            Value::Tuple(seq![]),
-            Value::Bool(false),
-            Value::Int(-7777777),
-            Value::Uint(1027),
-            Value::Uints(seq![11, 12, 1314, 1516171819, 20]),
-            Value::Alias(TypeId::Std(10), seq![], Box::new(Value::Bytes(F64_BYTES))),
-            Value::String(s("Berylsoft")),
-            Value::Bytes(b(b"(\x00)")),
-            Value::Option(Type::String, None),
-            Value::Option(Type::Bool, Some(Box::new(Value::Bool(true)))),
-            Value::Alias(TypeId::Anonymous/* third-party */, seq![], Box::new(Value::Bytes(b(b"\xff")))),
-            Value::Enum(TypeId::Std(0x5f50), 11),
-            Value::Choice(TypeId::Std(0x5f49), seq![], 5, Box::new(Value::Int(5))),
-            Value::Choice(TypeId::Std(0xfe00aa), seq![Type::Alias(TypeId::Std(0xfe00bb), seq![Type::Uint])], 163, Box::new(Value::Uint(12))),
-            Value::Type(Type::List(Box::new(Type::List(Box::new(Type::Struct(TypeId::Anonymous, seq![])))))),
-            Value::TypeId(TypeId::Std(0xfedcba98765432/* third-party */)),
-            Value::Option(
-                Type::Tuple(seq![Type::Int, Type::Tuple(seq![Type::Bytes]), Type::Bool]),
-                Some(Box::new(Value::Tuple(seq![Value::Int(9), Value::Tuple(seq![Value::Bytes(b(b"\xab"))]), Value::Bool(true)])))
-            ),
-        ]),
-        expb!("
+    case(case_2(), expb!("
         50 11
             50 00
             46 00
@@ -187,8 +190,7 @@ fn cases() {
                     50 01
                         42 01 ab
                     46 01
-        ")
-    );
+    "));
 
     fn err_case(exp: &'static [u8], err: Error, pos: usize) {
         let err2 = Value::decode::<SliceInput>(exp).unwrap_err();
@@ -312,4 +314,24 @@ fn cases() {
         Error::ImplicitTypeOnTop(Tag::Generics),
         1,
     );
+}
+
+#[test]
+fn text_cases() {
+    fn case(v: Value<&'static [u8]>, exp: &'static str) {
+        println!("{:?}", &v);
+        let buf = v.encode_text::<VecOutput>();
+        let buf_str = core::str::from_utf8(&buf).unwrap();
+        println!("len={}", exp.len());
+        println!("{}", exp);
+        println!("len={}", buf.len());
+        println!("{}", buf_str);
+        assert_eq!(buf_str, exp);
+        // let v2 = Value::decode_text::<SliceInput>(&buf).unwrap();
+        // assert_eq!(v, v2);
+    }
+
+    case(case_1(), r#"L(F1 M(P(U123 L(F1 M(S"hello" S"goodbye"))) P(U999999 L(F1 M(S"how are you" S"fine" S"thanks")))))"#);
+
+    case(case_2(), r#"P(P() F0 I-7777777 U1027 N[11 12 1314 1516171819 20] A(D(U'y' U0x0a) G() B"0000000000004940") S"Berylsoft" B"280029" O(F0 T(U's' P())) O(F1 F1) A(D(U'x' P()) G() B"ff") E(D(U'y' U0x5f50) U11) C(D(U'y' U0x5f49) G() U5 I5) C(D(U'y' U0xfe00aa) G(T(U'a' P(U0xfe00bb G(T(U'u' P()))))) U163 U12) T(U'l' T(U'l' T(U'r' P(U'x' G())))) D(U'y' U0xfedcba98765432) O(F1 P(I9 P(B"ab") F1)))"#);
 }
